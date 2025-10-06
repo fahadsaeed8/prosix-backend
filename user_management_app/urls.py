@@ -1,0 +1,16 @@
+from django.urls import path
+from .views import AcceptRejectUserView, AssignUserPermissionView, UserAPIView, GetUserAPIView, LoginView, LogoutApiView, ForgotPasswordView, UserListView, UserStatusListView
+
+urlpatterns = [
+    path('GetProfile', GetUserAPIView.as_view()),
+    path('EditProfile/', GetUserAPIView.as_view()),
+    path('SignUp/', UserAPIView.as_view()),
+    path('Login/', LoginView.as_view()),
+    path('Logout/', LogoutApiView.as_view()),
+    path('ForgotPassword/', ForgotPasswordView.as_view()),
+    path('AssignUserPermission/', AssignUserPermissionView.as_view()),
+    path('UserList/', UserListView.as_view()),
+
+    path('AcceptRejectUser/<int:id>/', AcceptRejectUserView.as_view()),
+    path('UserStatusList/', UserStatusListView.as_view()),
+]
