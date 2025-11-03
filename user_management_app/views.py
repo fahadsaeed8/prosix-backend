@@ -368,7 +368,83 @@ class ForgotPasswordView(APIView):
         return Response({'success': True,
                          'response': {'message': 'Password has been reset and sent to your email.'}},
                         status=status.HTTP_200_OK)
-    
+
+
+class ChangePasswordView(APIView):
+    """Change password API - requires authentication"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Change password for authenticated user
+        Requires: current_password, new_password, confirm_new_password
+        """
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        confirm_new_password = request.data.get('confirm_new_password')
+
+        # Validation
+        if not current_password:
+            return Response({
+                'success': False,
+                'response': {'message': 'Current password is required'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not new_password:
+            return Response({
+                'success': False,
+                'response': {'message': 'New password is required'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not confirm_new_password:
+            return Response({
+                'success': False,
+                'response': {'message': 'Confirm new password is required'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if new password and confirm password match
+        if new_password != confirm_new_password:
+            return Response({
+                'success': False,
+                'response': {'message': 'New password and confirm password do not match'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if new password is different from current password
+        if current_password == new_password:
+            return Response({
+                'success': False,
+                'response': {'message': 'New password must be different from current password'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify current password
+        if not user.check_password(current_password):
+            return Response({
+                'success': False,
+                'response': {'message': 'Current password is incorrect'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate new password length (optional - Django's default minimum is None, but it's good practice)
+        if len(new_password) < 8:
+            return Response({
+                'success': False,
+                'response': {'message': 'New password must be at least 8 characters long'}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update password
+        try:
+            user.set_password(new_password)
+            user.save()
+            return Response({
+                'success': True,
+                'response': {'message': 'Password changed successfully'}
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {'message': f'Error changing password: {str(e)}'}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class AssignUserPermissionView(APIView):
     permission_classes = [IsAuthenticated]
