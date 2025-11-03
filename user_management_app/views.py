@@ -18,6 +18,8 @@ from django.core.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework import filters
 from django.conf import settings
+from product_management_app.models import Shirt, ShirtCategory, ShirtSubCategory
+from website_management_app.models import WebsiteSettings, Banner, Blog
 
 User = get_user_model()
 
@@ -541,3 +543,199 @@ class AcceptRejectUserView(APIView):
                 'message': 'User updated successfully',
             }
         }, status=status.HTTP_200_OK)
+
+
+class StatisticsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Returns website statistics including:
+        - Website statistics (products, orders, customers)
+        - Customizer stats (models, patterns, templates)
+        - Content management stats (pages, blog posts, banners)
+        """
+        try:
+            # Website Statistics
+            total_products = Shirt.objects.count()
+            total_orders = 0  # Orders model doesn't exist yet
+            total_customers = UserProfile.objects.exclude(role='admin').count()
+            total_revenue = 0  # Revenue calculation when Order model exists
+
+            # Customizer Statistics
+            models_count = ShirtSubCategory.objects.count()  # Shirt models/subcategories
+            patterns_count = ShirtCategory.objects.count()  # Shirt patterns/categories
+            templates_count = Shirt.objects.count()  # Shirt templates
+
+            # Content Management Statistics
+            pages_count = 0  # Pages model doesn't exist yet
+            blog_post_count = Blog.objects.count()
+            banners_count = Banner.objects.count()
+
+            statistics = {
+                'website_statistics': {
+                    'total_products': total_products,
+                    'total_orders': total_orders,
+                    'total_customers': total_customers,
+                    'total_revenue': total_revenue
+                },
+                'customizer_stats': {
+                    'models': models_count,
+                    'patterns': patterns_count,
+                    'templates': templates_count
+                },
+                'content_management': {
+                    'pages': pages_count,
+                    'blog_post': blog_post_count,
+                    'banners': banners_count
+                }
+            }
+
+            return Response(statistics, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving statistics: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MembershipStatsAPIView(APIView):
+    """Get membership statistics"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Returns membership statistics:
+        - total_members
+        - active_members
+        - pending_members
+        - total_revenue
+        """
+        try:
+            # Count all members (users with profiles, excluding admins)
+            total_members = UserProfile.objects.exclude(role='admin').count()
+            
+            # Count active members
+            active_members = UserProfile.objects.filter(
+                membership_status='active'
+            ).exclude(role='admin').count()
+            
+            # Count pending members
+            pending_members = UserProfile.objects.filter(
+                membership_status='pending'
+            ).exclude(role='admin').count()
+            
+            # Total revenue (currently 0 as Order model doesn't exist)
+            total_revenue = 0  # TODO: Calculate from Order model when available
+            
+            stats = {
+                'total_members': total_members,
+                'active_members': active_members,
+                'pending_members': pending_members,
+                'total_revenue': total_revenue
+            }
+
+            return Response({
+                'success': True,
+                'response': {
+                    'data': stats
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving membership statistics: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MembersListAPIView(APIView):
+    """Get list of all members with filters"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Returns list of members with optional filters:
+        - status: pending, active, expired, cancelled
+        - type: individual, team, organization, enterprise
+        - interests: football, basketball, hockey, baseball, soccer, custom
+        """
+        try:
+            # Start with all user profiles excluding admins
+            queryset = UserProfile.objects.exclude(role='admin').select_related('user')
+            
+            # Filter by membership status
+            membership_status = request.query_params.get('status')
+            if membership_status:
+                valid_statuses = ['pending', 'active', 'expired', 'cancelled']
+                if membership_status in valid_statuses:
+                    queryset = queryset.filter(membership_status=membership_status)
+            
+            # Filter by membership type
+            membership_type = request.query_params.get('type')
+            if membership_type:
+                valid_types = ['individual', 'team', 'organization', 'enterprise']
+                if membership_type in valid_types:
+                    queryset = queryset.filter(membership_type=membership_type)
+            
+            # Get all matching profiles first
+            profiles = queryset.order_by('-id')
+            
+            # Filter by interests (interests is a JSONField array) - filter in Python for SQLite compatibility
+            interests = request.query_params.get('interests')
+            if interests:
+                valid_interests = ['football', 'basketball', 'hockey', 'baseball', 'soccer', 'custom']
+                # Split comma-separated interests if multiple provided
+                interest_list = [i.strip() for i in interests.split(',') if i.strip() in valid_interests]
+                if interest_list:
+                    # Filter profiles where interests JSONField contains any of the specified interests
+                    filtered_profiles = []
+                    for profile in profiles:
+                        profile_interests = profile.interests or []
+                        # Check if any of the requested interests exist in the profile's interests
+                        if any(interest in profile_interests for interest in interest_list):
+                            filtered_profiles.append(profile)
+                    profiles = filtered_profiles
+            
+            # Serialize the data
+            members_data = []
+            for profile in profiles:
+                user = profile.user
+                members_data.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name or '',
+                    'phone_number': profile.phone_number or '',
+                    'address': profile.address or '',
+                    'role': profile.role,
+                    'user_status': profile.user_status,
+                    'membership_status': profile.membership_status or 'pending',
+                    'membership_type': profile.membership_type or '',
+                    'interests': profile.interests or [],
+                    'is_active': user.is_active,
+                    'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                    'created_at': profile.created_at.isoformat() if hasattr(profile, 'created_at') else None
+                })
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': members_data,
+                    'count': len(members_data)
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving members list: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
