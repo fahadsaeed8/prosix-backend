@@ -618,14 +618,14 @@ class MembershipStatsAPIView(APIView):
             # Count all members (users with profiles, excluding admins)
             total_members = UserProfile.objects.exclude(role='admin').count()
             
-            # Count active members
+            # Count active members (using accepted status)
             active_members = UserProfile.objects.filter(
-                membership_status='active'
+                user_status='accepted'
             ).exclude(role='admin').count()
             
             # Count pending members
             pending_members = UserProfile.objects.filter(
-                membership_status='pending'
+                user_status='pending'
             ).exclude(role='admin').count()
             
             # Total revenue (currently 0 as Order model doesn't exist)
@@ -669,12 +669,12 @@ class MembersListAPIView(APIView):
             # Start with all user profiles excluding admins
             queryset = UserProfile.objects.exclude(role='admin').select_related('user')
             
-            # Filter by membership status
-            membership_status = request.query_params.get('status')
-            if membership_status:
-                valid_statuses = ['pending', 'active', 'expired', 'cancelled']
-                if membership_status in valid_statuses:
-                    queryset = queryset.filter(membership_status=membership_status)
+            # Filter by user status
+            user_status = request.query_params.get('status')
+            if user_status:
+                valid_statuses = ['pending', 'accepted', 'rejected']
+                if user_status in valid_statuses:
+                    queryset = queryset.filter(user_status=user_status)
             
             # Filter by membership type
             membership_type = request.query_params.get('type')
@@ -716,7 +716,6 @@ class MembersListAPIView(APIView):
                     'address': profile.address or '',
                     'role': profile.role,
                     'user_status': profile.user_status,
-                    'membership_status': profile.membership_status or 'pending',
                     'membership_type': profile.membership_type or '',
                     'interests': profile.interests or [],
                     'is_active': user.is_active,
