@@ -179,15 +179,19 @@ class UserAPIView(APIView):
                 role = 'user'
             
             # If role is admin, automatically set is_admin to True (no approval needed)
+            # Admin accounts are created active and ready to use immediately
             if role == 'admin':
                 is_admin = True
+                user_is_active = True
+            else:
+                user_is_active = False
             
             user = User.objects.create_user(
                 username=username,
                 email=email,
                 first_name=first_name,
                 password=password,
-                is_active=False
+                is_active=user_is_active
             )
 
             profile = UserProfile.objects.create(user=user, role=role)
@@ -195,10 +199,11 @@ class UserAPIView(APIView):
                 profile.address = address
             if phone_number:
                 profile.phone_number = phone_number
+            
+            # For admin users, set status to accepted immediately
             if is_admin:
-                user.is_active = True
-                user.save()
                 profile.user_status = 'accepted'
+                profile.save()
 
                 message = 'Congratulations! Your request has been successfully approved. You may now log in to your account and begin using our services.'
 
