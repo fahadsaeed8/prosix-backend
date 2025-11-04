@@ -33,7 +33,8 @@ CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
     'http://127.0.0.1:8000',
     'https://prosix.vercel.app',
-    'https://main.d27iouqq49jjmt.amplifyapp.com/'
+    'https://main.d27iouqq49jjmt.amplifyapp.com/',
+    '*'
 ]
 
 # CSRF_TRUSTED_ORIGINS = [
