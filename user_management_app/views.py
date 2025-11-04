@@ -175,6 +175,13 @@ class UserAPIView(APIView):
         
         # Create user
         try:
+            if not role:
+                role = 'user'
+            
+            # If role is admin, automatically set is_admin to True (no approval needed)
+            if role == 'admin':
+                is_admin = True
+            
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -182,8 +189,6 @@ class UserAPIView(APIView):
                 password=password,
                 is_active=False
             )
-            if not role:
-                role = 'user'
 
             profile = UserProfile.objects.create(user=user, role=role)
             if address:
