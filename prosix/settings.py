@@ -29,14 +29,7 @@ SECRET_KEY = 'django-insecure-1wt&w^73zv#g17)0kn0lchr$uvmnzqosinnj3mta2d108pxj7u
 DEBUG = True
 
 ALLOWED_HOSTS = ['*','https://hyperrational-alonso-nonautomatically.ngrok-free.dev/']
-CORS_ORIGIN_WHITELIST = [
-    'http://localhost:3000',
-    'http://127.0.0.1:8000',
-    'https://prosix.vercel.app',
-    'https://main.d27iouqq49jjmt.amplifyapp.com/',
-    '*',
-    'https://hyperrational-alonso-nonautomatically.ngrok-free.dev/'
-]
+
 
 # CSRF_TRUSTED_ORIGINS = [
 #     'https://prod-api.mr-corp.ca',

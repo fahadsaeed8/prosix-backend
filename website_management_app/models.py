@@ -36,7 +36,7 @@ PRODUCT_CATEGORY_CHOICES = [
 
 class Banner(models.Model):
     title = models.CharField(max_length=255)
-    banner_image_url = models.URLField(max_length=500)
+    banner_image = models.ImageField(upload_to='banners/', blank=True, null=True)
     position = models.CharField(max_length=50, choices=POSITION_CHOICES)
     link_url = models.URLField(max_length=500, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -57,7 +57,7 @@ class Blog(models.Model):
     title = models.CharField(max_length=255)
     excerpt = models.TextField(help_text="Short summary or description")
     content = models.TextField()
-    featured_image_url = models.URLField(max_length=500)
+    featured_image = models.ImageField(upload_to='blogs/', blank=True, null=True)
     status = models.CharField(max_length=20, choices=BLOG_STATUS_CHOICES, default='draft')
     category = models.CharField(max_length=50, choices=BLOG_CATEGORY_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,7 +92,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     sku = models.CharField(max_length=100, unique=True)
     category = models.CharField(max_length=50, choices=PRODUCT_CATEGORY_CHOICES)
-    image_url = models.URLField(max_length=500)
+    image = models.ImageField(upload_to='products/', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,7 +128,7 @@ class WebsiteSettings(models.Model):
     """
     website_name = models.CharField(max_length=255, default="ProSix")
     tagline = models.CharField(max_length=255, blank=True, null=True)
-    logo_url = models.URLField(max_length=500, blank=True, null=True)
+    logo = models.ImageField(upload_to='website_settings/', blank=True, null=True)
     
     # Theme Colors (Hex codes)
     primary_color = models.CharField(max_length=7, default="#000000", help_text="Primary color hex code")

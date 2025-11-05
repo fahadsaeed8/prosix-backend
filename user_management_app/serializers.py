@@ -5,15 +5,16 @@ from user_management_app.models import UserProfile
 from django.conf import settings
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    logo = serializers.SerializerMethodField()
     class Meta:
         model = UserProfile
         fields ='__all__'
     
-    def get_logo(self, instance):
-        if instance.logo:
-            return f'{settings.DOMAIN}{instance.logo.url}'
-        return None
+    def to_representation(self, instance):
+        """Override to return full URL for logo"""
+        representation = super().to_representation(instance)
+        if representation.get('logo'):
+            representation['logo'] = f'{settings.DOMAIN}{instance.logo.url}'
+        return representation
 
 
 class UserSerializer(serializers.ModelSerializer):
