@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import FavoriteShirtAPIView, ShirtListCreateView, ShirtRetrieveUpdateDestroyView, ShirtCategoryListCreateView, ShirtCategoryRetrieveUpdateDestroyView, ShirtSubCategoryListCreateView, ShirtSubCategoryRetrieveUpdateDestroyView, UserShirtCreateAPIView, UserShirtListAPIView, CustomizerListCreateView, CustomizerRetrieveUpdateDestroyView, CustomizerStatisticsAPIView, PatternListCreateView, PatternRetrieveUpdateDestroyView, ColorListCreateView, ColorRetrieveUpdateDestroyView, FontListCreateView, FontRetrieveUpdateDestroyView, OrderListCreateView, OrderRetrieveUpdateDestroyView, InvoiceListCreateView, InvoiceRetrieveDestroyView
+from .views import FavoriteShirtAPIView, ShirtListCreateView, ShirtRetrieveUpdateDestroyView, ShirtCategoryListCreateView, ShirtCategoryRetrieveUpdateDestroyView, ShirtSubCategoryListCreateView, ShirtSubCategoryRetrieveUpdateDestroyView, UserShirtCreateAPIView, UserShirtListAPIView, CustomizerListCreateView, CustomizerRetrieveUpdateDestroyView, CustomizerStatisticsAPIView, PatternListCreateView, PatternRetrieveUpdateDestroyView, ColorListCreateView, ColorRetrieveUpdateDestroyView, FontListCreateView, FontRetrieveUpdateDestroyView, OrderListCreateView, OrderRetrieveUpdateDestroyView, InvoiceListCreateView, InvoiceRetrieveDestroyView, RevenueReportListCreateView, RevenueReportRetrieveUpdateDestroyView, ProductSalesReportListCreateView, ProductSalesReportRetrieveUpdateDestroyView, CustomerAnalysisReportListCreateView, CustomerAnalysisReportRetrieveUpdateDestroyView, GrowthTrendReportListCreateView, GrowthTrendReportRetrieveUpdateDestroyView, GenerateRevenueReportAPIView, GenerateProductSalesReportAPIView, GenerateCustomerAnalysisReportAPIView, GenerateGrowthTrendReportAPIView
 
 urlpatterns = [
     
@@ -33,5 +33,21 @@ urlpatterns = [
     
     path('invoices/', InvoiceListCreateView.as_view()),
     path('invoices/<int:id>/', InvoiceRetrieveDestroyView.as_view()),
+    
+    path('reports/revenue/', RevenueReportListCreateView.as_view()),
+    path('reports/revenue/<int:id>/', RevenueReportRetrieveUpdateDestroyView.as_view()),
+    path('reports/revenue/generate/', GenerateRevenueReportAPIView.as_view()),
+    
+    path('reports/product-sales/', ProductSalesReportListCreateView.as_view()),
+    path('reports/product-sales/<int:id>/', ProductSalesReportRetrieveUpdateDestroyView.as_view()),
+    path('reports/product-sales/generate/', GenerateProductSalesReportAPIView.as_view()),
+    
+    path('reports/customer-analysis/', CustomerAnalysisReportListCreateView.as_view()),
+    path('reports/customer-analysis/<int:id>/', CustomerAnalysisReportRetrieveUpdateDestroyView.as_view()),
+    path('reports/customer-analysis/generate/', GenerateCustomerAnalysisReportAPIView.as_view()),
+    
+    path('reports/growth-trend/', GrowthTrendReportListCreateView.as_view()),
+    path('reports/growth-trend/<int:id>/', GrowthTrendReportRetrieveUpdateDestroyView.as_view()),
+    path('reports/growth-trend/generate/', GenerateGrowthTrendReportAPIView.as_view()),
 
 ]

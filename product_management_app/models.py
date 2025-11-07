@@ -335,3 +335,80 @@ class Invoice(models.Model):
             random_suffix = random.randint(1000, 9999)
             self.invoice_id = f"INV-{timestamp}-{random_suffix}"
         super().save(*args, **kwargs)
+
+
+# Report Models
+class RevenueReport(models.Model):
+    """Model to store revenue report data"""
+    this_month_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    last_month_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    growth_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Growth percentage like +20% or -5%")
+    total_orders = models.IntegerField(default=0)
+    report_date = models.DateField(auto_now_add=True, help_text="Date when report was generated")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Revenue Report'
+        verbose_name_plural = 'Revenue Reports'
+        ordering = ['-report_date']
+    
+    def __str__(self):
+        return f"Revenue Report - {self.report_date}"
+
+
+class ProductSalesReport(models.Model):
+    """Model to store product sales report data"""
+    top_product_name = models.CharField(max_length=255, blank=True, null=True)
+    top_product_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    top_product_units_sold = models.IntegerField(default=0)
+    top_category = models.CharField(max_length=255, blank=True, null=True)
+    report_date = models.DateField(auto_now_add=True, help_text="Date when report was generated")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Product Sales Report'
+        verbose_name_plural = 'Product Sales Reports'
+        ordering = ['-report_date']
+    
+    def __str__(self):
+        return f"Product Sales Report - {self.report_date}"
+
+
+class CustomerAnalysisReport(models.Model):
+    """Model to store customer analysis report data"""
+    total_customers = models.IntegerField(default=0)
+    new_customers = models.IntegerField(default=0)
+    returning_customers = models.IntegerField(default=0)
+    average_order_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    report_date = models.DateField(auto_now_add=True, help_text="Date when report was generated")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Customer Analysis Report'
+        verbose_name_plural = 'Customer Analysis Reports'
+        ordering = ['-report_date']
+    
+    def __str__(self):
+        return f"Customer Analysis Report - {self.report_date}"
+
+
+class GrowthTrendReport(models.Model):
+    """Model to store growth trend report data"""
+    monthly_growth = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Monthly growth percentage")
+    yearly_growth = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Yearly growth percentage")
+    quarterly_growth = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Quarterly growth percentage")
+    market_share = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Market share percentage")
+    report_date = models.DateField(auto_now_add=True, help_text="Date when report was generated")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Growth Trend Report'
+        verbose_name_plural = 'Growth Trend Reports'
+        ordering = ['-report_date']
+    
+    def __str__(self):
+        return f"Growth Trend Report - {self.report_date}"

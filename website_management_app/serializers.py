@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category
+from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings
 from django.conf import settings
 
 
@@ -186,4 +186,187 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Color must be a valid hex code starting with #")
         if value and len(value) != 7:
             raise serializers.ValidationError("Color must be a valid hex code (e.g., #FF5733)")
+        return value
+
+
+class PaymentSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for Payment Settings"""
+    
+    class Meta:
+        model = PaymentSettings
+        fields = [
+            'id',
+            # Payment Methods
+            'paypal_enabled',
+            'stripe_enabled',
+            'cash_app_enabled',
+            'zelle_enabled',
+            # Payment Configuration
+            'default_currency',
+            # Security Settings
+            'stripe_api_key',
+            'stripe_webhook_secret',
+            'enable_3d_secure',
+            # Payment Notification Settings
+            'admin_email',
+            'email_on_payment_success',
+            'email_on_payment_failure',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_admin_email(self, value):
+        """Validate admin email if email notifications are enabled"""
+        if value:
+            # Basic email validation is handled by EmailField
+            pass
+        elif self.initial_data.get('email_on_payment_success') or self.initial_data.get('email_on_payment_failure'):
+            raise serializers.ValidationError(
+                "Admin email is required when email notifications are enabled"
+            )
+        return value
+
+
+class ShippingMethodSerializer(serializers.ModelSerializer):
+    """Serializer for Shipping Method"""
+    
+    class Meta:
+        model = ShippingMethod
+        fields = [
+            'id',
+            'method_name',
+            'provider',
+            'cost',
+            'delivery_time',
+            'status',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_cost(self, value):
+        """Validate that cost is non-negative"""
+        if value < 0:
+            raise serializers.ValidationError("Shipping cost cannot be negative")
+        return value
+
+
+class TaxConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for Tax Configuration"""
+    
+    class Meta:
+        model = TaxConfiguration
+        fields = [
+            'id',
+            # Tax Settings
+            'enable_tax_setting',
+            'tax_type',
+            'tax_inclusive_pricing',
+            # Business Information
+            'business_name',
+            'tax_id_vat_number',
+            'business_address',
+            # Tax Exemption Settings
+            'b2b_tax_exemption',
+            'digital_product_tax',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_tax_type(self, value):
+        """Validate tax type is provided when tax setting is enabled"""
+        if self.initial_data.get('enable_tax_setting') and not value:
+            raise serializers.ValidationError(
+                "Tax type is required when tax setting is enabled"
+            )
+        return value
+
+
+class GeneralSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for General Settings"""
+    
+    class Meta:
+        model = GeneralSettings
+        fields = [
+            'id',
+            # Website Settings
+            'site_title',
+            'site_description',
+            'default_language',
+            # Currency and Pricing
+            'currency',
+            'tax_rate',
+            # System Settings
+            'maintenance_mode',
+            'enable_analytics',
+            'enable_notifications',
+            # Contact Information
+            'email',
+            'phone_number',
+            'business_address',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_tax_rate(self, value):
+        """Validate that tax rate is non-negative and reasonable"""
+        if value < 0:
+            raise serializers.ValidationError("Tax rate cannot be negative")
+        if value > 100:
+            raise serializers.ValidationError("Tax rate cannot exceed 100%")
+        return value
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for Notification"""
+    
+    class Meta:
+        model = Notification
+        fields = [
+            'id',
+            'emoji',
+            'title',
+            'body',
+            'date',
+            'is_read',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'date', 'created_at', 'updated_at')
+
+
+class NotificationSettingsSerializer(serializers.ModelSerializer):
+    """Serializer for Notification Settings"""
+    
+    class Meta:
+        model = NotificationSettings
+        fields = [
+            'id',
+            # Email Notifications
+            'new_order_notification',
+            'payment_notifications',
+            'low_stock_alerts',
+            'customer_messages',
+            # Push Notifications
+            'enable_push_notifications',
+            'new_order_alerts',
+            'system_alerts',
+            # SMS Notifications
+            'enable_sms_notification',
+            'admin_phone_number',
+            'critical_alerts',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_admin_phone_number(self, value):
+        """Validate admin phone number if SMS notifications are enabled"""
+        if self.initial_data.get('enable_sms_notification') and not value:
+            raise serializers.ValidationError(
+                "Admin phone number is required when SMS notifications are enabled"
+            )
         return value

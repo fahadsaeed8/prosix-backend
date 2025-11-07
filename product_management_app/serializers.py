@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice
+from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
 from django.conf import settings
 
 
@@ -321,3 +321,75 @@ class InvoiceSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Amount must be greater than 0")
         return value
+
+
+class RevenueReportSerializer(serializers.ModelSerializer):
+    """Serializer for Revenue Report"""
+    
+    class Meta:
+        model = RevenueReport
+        fields = [
+            'id',
+            'this_month_revenue',
+            'last_month_revenue',
+            'growth_percentage',
+            'total_orders',
+            'report_date',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class ProductSalesReportSerializer(serializers.ModelSerializer):
+    """Serializer for Product Sales Report"""
+    
+    class Meta:
+        model = ProductSalesReport
+        fields = [
+            'id',
+            'top_product_name',
+            'top_product_revenue',
+            'top_product_units_sold',
+            'top_category',
+            'report_date',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class CustomerAnalysisReportSerializer(serializers.ModelSerializer):
+    """Serializer for Customer Analysis Report"""
+    
+    class Meta:
+        model = CustomerAnalysisReport
+        fields = [
+            'id',
+            'total_customers',
+            'new_customers',
+            'returning_customers',
+            'average_order_value',
+            'report_date',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class GrowthTrendReportSerializer(serializers.ModelSerializer):
+    """Serializer for Growth Trend Report"""
+    
+    class Meta:
+        model = GrowthTrendReport
+        fields = [
+            'id',
+            'monthly_growth',
+            'yearly_growth',
+            'quarterly_growth',
+            'market_share',
+            'report_date',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')

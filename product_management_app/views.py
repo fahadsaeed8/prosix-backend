@@ -1,11 +1,15 @@
 from rest_framework import generics
-from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice
-from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer
+from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
+from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.db.models import Count
+from django.db.models import Count, Sum, Avg, Q, F
+from django.utils import timezone
+from django.contrib.auth.models import User
+from datetime import datetime, timedelta
+from decimal import Decimal
 import json
 
 class ShirtCategoryListCreateView(generics.ListCreateAPIView):
@@ -640,3 +644,661 @@ class InvoiceRetrieveDestroyView(generics.RetrieveDestroyAPIView):
                 'message': 'Invoice deleted successfully'
             }
         }, status=status.HTTP_200_OK)
+
+
+# Revenue Report Views
+class RevenueReportListCreateView(generics.ListCreateAPIView):
+    """List all revenue reports or create a new revenue report"""
+    queryset = RevenueReport.objects.all()
+    serializer_class = RevenueReportSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Revenue report created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class RevenueReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a revenue report by ID"""
+    queryset = RevenueReport.objects.all()
+    serializer_class = RevenueReportSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Revenue report updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Revenue report deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+# Product Sales Report Views
+class ProductSalesReportListCreateView(generics.ListCreateAPIView):
+    """List all product sales reports or create a new product sales report"""
+    queryset = ProductSalesReport.objects.all()
+    serializer_class = ProductSalesReportSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Product sales report created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class ProductSalesReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a product sales report by ID"""
+    queryset = ProductSalesReport.objects.all()
+    serializer_class = ProductSalesReportSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Product sales report updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Product sales report deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+# Customer Analysis Report Views
+class CustomerAnalysisReportListCreateView(generics.ListCreateAPIView):
+    """List all customer analysis reports or create a new customer analysis report"""
+    queryset = CustomerAnalysisReport.objects.all()
+    serializer_class = CustomerAnalysisReportSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Customer analysis report created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class CustomerAnalysisReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a customer analysis report by ID"""
+    queryset = CustomerAnalysisReport.objects.all()
+    serializer_class = CustomerAnalysisReportSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Customer analysis report updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Customer analysis report deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+# Growth Trend Report Views
+class GrowthTrendReportListCreateView(generics.ListCreateAPIView):
+    """List all growth trend reports or create a new growth trend report"""
+    queryset = GrowthTrendReport.objects.all()
+    serializer_class = GrowthTrendReportSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Growth trend report created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class GrowthTrendReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a growth trend report by ID"""
+    queryset = GrowthTrendReport.objects.all()
+    serializer_class = GrowthTrendReportSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Growth trend report updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Growth trend report deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+# Report Generation APIs
+class GenerateRevenueReportAPIView(APIView):
+    """Generate revenue report dynamically from Order and Invoice data"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Generate revenue report with:
+        - This month revenue (from completed orders and paid invoices)
+        - Last month revenue
+        - Growth percentage
+        - Total orders count
+        """
+        try:
+            now = timezone.now()
+            current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end = current_month_start - timedelta(days=1)
+            last_month_start = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # Calculate this month revenue from completed orders
+            this_month_orders = Order.objects.filter(
+                date__gte=current_month_start,
+                status='completed'
+            )
+            this_month_revenue_orders = this_month_orders.aggregate(
+                total=Sum('total')
+            )['total'] or Decimal('0.00')
+            
+            # Calculate this month revenue from paid invoices
+            this_month_invoices = Invoice.objects.filter(
+                date__gte=current_month_start,
+                status='paid'
+            )
+            this_month_revenue_invoices = this_month_invoices.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
+            
+            this_month_revenue = this_month_revenue_orders + this_month_revenue_invoices
+            
+            # Calculate last month revenue
+            last_month_orders = Order.objects.filter(
+                date__gte=last_month_start,
+                date__lt=current_month_start,
+                status='completed'
+            )
+            last_month_revenue_orders = last_month_orders.aggregate(
+                total=Sum('total')
+            )['total'] or Decimal('0.00')
+            
+            last_month_invoices = Invoice.objects.filter(
+                date__gte=last_month_start,
+                date__lt=current_month_start,
+                status='paid'
+            )
+            last_month_revenue_invoices = last_month_invoices.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
+            
+            last_month_revenue = last_month_revenue_orders + last_month_revenue_invoices
+            
+            # Calculate growth percentage
+            if last_month_revenue > 0:
+                growth_percentage = ((this_month_revenue - last_month_revenue) / last_month_revenue) * 100
+            else:
+                growth_percentage = Decimal('100.00') if this_month_revenue > 0 else Decimal('0.00')
+            
+            # Total orders count (this month)
+            total_orders = this_month_orders.count()
+            
+            report_data = {
+                'this_month_revenue': float(this_month_revenue),
+                'last_month_revenue': float(last_month_revenue),
+                'growth_percentage': float(growth_percentage),
+                'total_orders': total_orders,
+                'report_date': now.date(),
+                'generated_at': now.isoformat()
+            }
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': report_data,
+                    'message': 'Revenue report generated successfully'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error generating revenue report: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GenerateProductSalesReportAPIView(APIView):
+    """Generate product sales report dynamically from UserShirt and Customizer data"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Generate product sales report with:
+        - Top product name (most popular shirt or customizer)
+        - Top product revenue (from orders)
+        - Top product units sold (count of user shirts/customizers)
+        - Top category
+        """
+        try:
+            now = timezone.now()
+            current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # Get top shirt by user count
+            top_shirt = Shirt.objects.annotate(
+                user_count=Count('usershirts_shirt')
+            ).order_by('-user_count').first()
+            
+            # Get top customizer by user count
+            top_customizer = Customizer.objects.annotate(
+                user_count=Count('usercustomizers_customizer')
+            ).order_by('-user_count').first()
+            
+            # Determine top product
+            if top_shirt and top_customizer:
+                if top_shirt.user_count >= top_customizer.user_count:
+                    top_product_name = top_shirt.name
+                    top_product_units_sold = top_shirt.user_count
+                    top_category = top_shirt.category.name if top_shirt.category else 'N/A'
+                else:
+                    top_product_name = top_customizer.model_name
+                    top_product_units_sold = top_customizer.user_count
+                    top_category = top_customizer.get_category_display()
+            elif top_shirt:
+                top_product_name = top_shirt.name
+                top_product_units_sold = top_shirt.user_count
+                top_category = top_shirt.category.name if top_shirt.category else 'N/A'
+            elif top_customizer:
+                top_product_name = top_customizer.model_name
+                top_product_units_sold = top_customizer.user_count
+                top_category = top_customizer.get_category_display()
+            else:
+                top_product_name = None
+                top_product_units_sold = 0
+                top_category = None
+            
+            # Calculate revenue from orders (this month) - approximate
+            # Since we don't have direct product-order relationship, we'll use average order value
+            this_month_orders = Order.objects.filter(
+                date__gte=current_month_start,
+                status='completed'
+            )
+            avg_order_value = this_month_orders.aggregate(
+                avg=Avg('total')
+            )['avg'] or Decimal('0.00')
+            
+            # Estimate top product revenue (units sold * average order value)
+            top_product_revenue = Decimal(str(top_product_units_sold)) * avg_order_value if top_product_units_sold > 0 else Decimal('0.00')
+            
+            report_data = {
+                'top_product_name': top_product_name,
+                'top_product_revenue': float(top_product_revenue),
+                'top_product_units_sold': top_product_units_sold,
+                'top_category': top_category,
+                'report_date': now.date(),
+                'generated_at': now.isoformat()
+            }
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': report_data,
+                    'message': 'Product sales report generated successfully'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error generating product sales report: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GenerateCustomerAnalysisReportAPIView(APIView):
+    """Generate customer analysis report dynamically from User and Order data"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Generate customer analysis report with:
+        - Total customers
+        - New customers (this month)
+        - Returning customers (customers with multiple orders)
+        - Average order value
+        """
+        try:
+            now = timezone.now()
+            current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # Total customers (users who have placed at least one order)
+            total_customers = User.objects.filter(orders__isnull=False).distinct().count()
+            
+            # New customers (users who created their first order this month)
+            all_customers = User.objects.filter(orders__isnull=False).distinct()
+            new_customers = 0
+            for customer in all_customers:
+                first_order = customer.orders.order_by('date').first()
+                if first_order and first_order.date >= current_month_start:
+                    new_customers += 1
+            
+            # Returning customers (customers with more than one order)
+            returning_customers = User.objects.annotate(
+                order_count=Count('orders')
+            ).filter(order_count__gt=1).count()
+            
+            # Average order value
+            all_orders = Order.objects.filter(status='completed')
+            avg_order_value = all_orders.aggregate(
+                avg=Avg('total')
+            )['avg'] or Decimal('0.00')
+            
+            report_data = {
+                'total_customers': total_customers,
+                'new_customers': new_customers,
+                'returning_customers': returning_customers,
+                'average_order_value': float(avg_order_value),
+                'report_date': now.date(),
+                'generated_at': now.isoformat()
+            }
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': report_data,
+                    'message': 'Customer analysis report generated successfully'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error generating customer analysis report: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GenerateGrowthTrendReportAPIView(APIView):
+    """Generate growth trend report dynamically from historical Order and Invoice data"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        """
+        Generate growth trend report with:
+        - Monthly growth percentage
+        - Yearly growth percentage
+        - Quarterly growth percentage
+        - Market share (estimated)
+        """
+        try:
+            now = timezone.now()
+            current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_start = (current_month_start - timedelta(days=1)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # Current quarter start
+            current_quarter = (now.month - 1) // 3
+            current_quarter_start = now.replace(month=current_quarter * 3 + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            # Last quarter calculation
+            if current_quarter == 0:
+                # If current quarter is Q1, last quarter is Q4 of previous year
+                last_quarter_start = now.replace(year=now.year - 1, month=10, day=1, hour=0, minute=0, second=0, microsecond=0)
+                last_quarter_end = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+            else:
+                # Previous quarter of same year
+                last_quarter_month = (current_quarter - 1) * 3 + 1
+                last_quarter_start = now.replace(month=last_quarter_month, day=1, hour=0, minute=0, second=0, microsecond=0)
+                last_quarter_end = current_quarter_start - timedelta(days=1)
+            
+            # Current year start
+            current_year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_year_start = current_year_start.replace(year=current_year_start.year - 1)
+            last_year_end = current_year_start - timedelta(days=1)
+            
+            # Monthly growth
+            this_month_revenue = self._calculate_revenue(current_month_start, now)
+            last_month_revenue = self._calculate_revenue(last_month_start, current_month_start - timedelta(days=1))
+            monthly_growth = self._calculate_growth_percentage(this_month_revenue, last_month_revenue)
+            
+            # Quarterly growth
+            this_quarter_revenue = self._calculate_revenue(current_quarter_start, now)
+            last_quarter_revenue = self._calculate_revenue(
+                last_quarter_start,
+                last_quarter_end
+            )
+            quarterly_growth = self._calculate_growth_percentage(this_quarter_revenue, last_quarter_revenue)
+            
+            # Yearly growth
+            this_year_revenue = self._calculate_revenue(current_year_start, now)
+            last_year_revenue = self._calculate_revenue(last_year_start, last_year_end)
+            yearly_growth = self._calculate_growth_percentage(this_year_revenue, last_year_revenue)
+            
+            # Market share (estimated as percentage of total revenue vs previous period)
+            # This is a simplified calculation
+            total_revenue_all_time = self._calculate_revenue(None, now)
+            market_share = Decimal('100.00')  # Placeholder - would need industry data for real calculation
+            
+            report_data = {
+                'monthly_growth': float(monthly_growth),
+                'yearly_growth': float(yearly_growth),
+                'quarterly_growth': float(quarterly_growth),
+                'market_share': float(market_share),
+                'report_date': now.date(),
+                'generated_at': now.isoformat()
+            }
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': report_data,
+                    'message': 'Growth trend report generated successfully'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error generating growth trend report: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _calculate_revenue(self, start_date, end_date):
+        """Helper method to calculate revenue from orders and invoices"""
+        orders_query = Order.objects.filter(status='completed')
+        invoices_query = Invoice.objects.filter(status='paid')
+        
+        if start_date:
+            orders_query = orders_query.filter(date__gte=start_date)
+            invoices_query = invoices_query.filter(date__gte=start_date)
+        
+        if end_date:
+            orders_query = orders_query.filter(date__lte=end_date)
+            invoices_query = invoices_query.filter(date__lte=end_date)
+        
+        orders_revenue = orders_query.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+        invoices_revenue = invoices_query.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        return orders_revenue + invoices_revenue
+    
+    def _calculate_growth_percentage(self, current, previous):
+        """Helper method to calculate growth percentage"""
+        if previous > 0:
+            return ((current - previous) / previous) * 100
+        else:
+            return Decimal('100.00') if current > 0 else Decimal('0.00')

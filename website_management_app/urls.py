@@ -13,7 +13,20 @@ from .views import (
     ProductRetrieveUpdateDestroyView,
     CategoryListCreateView,
     CategoryRetrieveUpdateDestroyView,
-    InventoryStatsAPIView
+    InventoryStatsAPIView,
+    PaymentSettingsView,
+    ShippingMethodListCreateView,
+    ShippingMethodRetrieveUpdateDestroyView,
+    ShippingMethodToggleStatusView,
+    TaxConfigurationView,
+    GeneralSettingsView,
+    GeneralSettingsResetView,
+    NotificationListCreateView,
+    NotificationRetrieveUpdateDestroyView,
+    NotificationMarkAsReadView,
+    NotificationMarkAllAsReadView,
+    NotificationDeleteAllView,
+    NotificationSettingsView
 )
 
 urlpatterns = [
@@ -31,5 +44,18 @@ urlpatterns = [
     path('categories/', CategoryListCreateView.as_view()),
     path('categories/<int:id>/', CategoryRetrieveUpdateDestroyView.as_view()),
     path('inventory/stats/', InventoryStatsAPIView.as_view()),
+    path('settings/payment/', PaymentSettingsView.as_view()),
+    path('settings/tax/', TaxConfigurationView.as_view()),
+    path('settings/general/', GeneralSettingsView.as_view()),
+    path('settings/general/reset/', GeneralSettingsResetView.as_view()),
+    path('settings/notifications/', NotificationSettingsView.as_view()),
+    path('notifications/', NotificationListCreateView.as_view()),
+    path('notifications/<int:id>/', NotificationRetrieveUpdateDestroyView.as_view()),
+    path('notifications/<int:id>/mark-read/', NotificationMarkAsReadView.as_view()),
+    path('notifications/mark-all-read/', NotificationMarkAllAsReadView.as_view()),
+    path('notifications/delete-all/', NotificationDeleteAllView.as_view()),
+    path('shipping-methods/', ShippingMethodListCreateView.as_view()),
+    path('shipping-methods/<int:id>/', ShippingMethodRetrieveUpdateDestroyView.as_view()),
+    path('shipping-methods/<int:id>/toggle-status/', ShippingMethodToggleStatusView.as_view()),
 ]
 

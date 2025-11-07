@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
-from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category
-from .serializers import WebsiteSettingsSerializer, BannerSerializer, BlogSerializer, TestimonialSerializer, ProductSerializer, CategorySerializer
+from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings
+from .serializers import WebsiteSettingsSerializer, BannerSerializer, BlogSerializer, TestimonialSerializer, ProductSerializer, CategorySerializer, PaymentSettingsSerializer, ShippingMethodSerializer, TaxConfigurationSerializer, GeneralSettingsSerializer, NotificationSerializer, NotificationSettingsSerializer
 from django.core.exceptions import ValidationError
 
 
@@ -786,5 +786,689 @@ class InventoryStatsAPIView(APIView):
                 'success': False,
                 'response': {
                     'message': f'Error retrieving inventory statistics: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PaymentSettingsView(APIView):
+    """Get and Update Payment Settings"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current payment settings"""
+        try:
+            settings = PaymentSettings.get_settings()
+            serializer = PaymentSettingsSerializer(settings)
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving payment settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """Update payment settings (partial update)"""
+        try:
+            settings = PaymentSettings.get_settings()
+            serializer = PaymentSettingsSerializer(settings, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Payment settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating payment settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request):
+        """Update payment settings (full update)"""
+        try:
+            settings = PaymentSettings.get_settings()
+            serializer = PaymentSettingsSerializer(settings, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Payment settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating payment settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ShippingMethodListCreateView(generics.ListCreateAPIView):
+    """List all shipping methods or create a new shipping method"""
+    queryset = ShippingMethod.objects.all()
+    serializer_class = ShippingMethodSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Shipping method created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class ShippingMethodRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a shipping method by ID"""
+    queryset = ShippingMethod.objects.all()
+    serializer_class = ShippingMethodSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Shipping method updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Shipping method deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class ShippingMethodToggleStatusView(APIView):
+    """Toggle shipping method status between active and inactive"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, id):
+        """Toggle status of a shipping method"""
+        try:
+            shipping_method = ShippingMethod.objects.get(id=id)
+            
+            # Toggle status
+            if shipping_method.status == 'active':
+                shipping_method.status = 'inactive'
+            else:
+                shipping_method.status = 'active'
+            
+            shipping_method.save()
+            
+            serializer = ShippingMethodSerializer(shipping_method)
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data,
+                    'message': f'Shipping method status changed to {shipping_method.get_status_display()}'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except ShippingMethod.DoesNotExist:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'Shipping method not found'
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error toggling shipping method status: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TaxConfigurationView(APIView):
+    """Get and Update Tax Configuration"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current tax configuration"""
+        try:
+            config = TaxConfiguration.get_settings()
+            serializer = TaxConfigurationSerializer(config)
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving tax configuration: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """Update tax configuration (partial update)"""
+        try:
+            config = TaxConfiguration.get_settings()
+            serializer = TaxConfigurationSerializer(config, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Tax configuration updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating tax configuration: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request):
+        """Update tax configuration (full update)"""
+        try:
+            config = TaxConfiguration.get_settings()
+            serializer = TaxConfigurationSerializer(config, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Tax configuration updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating tax configuration: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GeneralSettingsView(APIView):
+    """Get and Update General Settings"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current general settings"""
+        try:
+            settings = GeneralSettings.get_settings()
+            serializer = GeneralSettingsSerializer(settings)
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving general settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """Update general settings (partial update)"""
+        try:
+            settings = GeneralSettings.get_settings()
+            serializer = GeneralSettingsSerializer(settings, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'General settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating general settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request):
+        """Update general settings (full update)"""
+        try:
+            settings = GeneralSettings.get_settings()
+            serializer = GeneralSettingsSerializer(settings, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'General settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating general settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GeneralSettingsResetView(APIView):
+    """Reset General Settings to Default Values"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Reset general settings to default values"""
+        try:
+            settings = GeneralSettings.reset_to_default()
+            serializer = GeneralSettingsSerializer(settings)
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data,
+                    'message': 'General settings reset to default values successfully'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error resetting general settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationListCreateView(generics.ListCreateAPIView):
+    """List all notifications or create a new notification"""
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Notification created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class NotificationRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a notification by ID"""
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Notification updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Notification deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class NotificationMarkAsReadView(APIView):
+    """Mark a single notification as read"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, id):
+        """Mark notification as read"""
+        try:
+            notification = Notification.objects.get(id=id)
+            notification.is_read = True
+            notification.save()
+            
+            serializer = NotificationSerializer(notification)
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data,
+                    'message': 'Notification marked as read'
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Notification.DoesNotExist:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'Notification not found'
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error marking notification as read: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationMarkAllAsReadView(APIView):
+    """Mark all notifications as read"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Mark all notifications as read"""
+        try:
+            updated_count = Notification.objects.filter(is_read=False).update(is_read=True)
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'message': f'{updated_count} notification(s) marked as read',
+                    'updated_count': updated_count
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error marking all notifications as read: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationDeleteAllView(APIView):
+    """Delete all notifications"""
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        """Delete all notifications"""
+        try:
+            deleted_count, _ = Notification.objects.all().delete()
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'message': f'{deleted_count} notification(s) deleted successfully',
+                    'deleted_count': deleted_count
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error deleting all notifications: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationSettingsView(APIView):
+    """Get and Update Notification Settings"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get current notification settings"""
+        try:
+            settings = NotificationSettings.get_settings()
+            serializer = NotificationSettingsSerializer(settings)
+            return Response({
+                'success': True,
+                'response': {
+                    'data': serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error retrieving notification settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """Update notification settings (partial update)"""
+        try:
+            settings = NotificationSettings.get_settings()
+            serializer = NotificationSettingsSerializer(settings, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Notification settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating notification settings: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request):
+        """Update notification settings (full update) - requires full payload"""
+        try:
+            settings = NotificationSettings.get_settings()
+            
+            # Full payload required for PUT
+            required_fields = [
+                'new_order_notification',
+                'payment_notifications',
+                'low_stock_alerts',
+                'customer_messages',
+                'enable_push_notifications',
+                'new_order_alerts',
+                'system_alerts',
+                'enable_sms_notification',
+                'admin_phone_number',
+                'critical_alerts'
+            ]
+            
+            missing_fields = [field for field in required_fields if field not in request.data]
+            if missing_fields:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': f'Missing required fields: {", ".join(missing_fields)}',
+                        'required_fields': required_fields
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializer = NotificationSettingsSerializer(settings, data=request.data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'response': {
+                        'data': serializer.data,
+                        'message': 'Notification settings updated successfully'
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error updating notification settings: {str(e)}'
                 }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
