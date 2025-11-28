@@ -37,11 +37,9 @@ PRODUCT_CATEGORY_CHOICES = [
 
 class Banner(models.Model):
     title = models.CharField(max_length=255)
-    banner_image = models.ImageField(upload_to='banners/', blank=True, null=True)
-    position = models.CharField(max_length=50, choices=POSITION_CHOICES)
-    link_url = models.URLField(max_length=500, blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    image = models.ImageField(upload_to='banners/', blank=True, null=True, help_text="Banner image")
     description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -51,7 +49,7 @@ class Banner(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.title} - {self.get_position_display()}"
+        return f"{self.title} - {self.get_status_display()}"
 
 
 class Blog(models.Model):

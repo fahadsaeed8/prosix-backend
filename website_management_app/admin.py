@@ -16,8 +16,8 @@ class WebsiteSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
-    list_display = ('title', 'position', 'status', 'created_at', 'updated_at')
-    list_filter = ('position', 'status', 'created_at')
+    list_display = ('title', 'status', 'created_at', 'updated_at')
+    list_filter = ('status', 'created_at')
     search_fields = ('title', 'description')
     readonly_fields = ('id', 'created_at', 'updated_at')
 

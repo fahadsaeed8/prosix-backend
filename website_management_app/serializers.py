@@ -79,21 +79,19 @@ class BannerSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
-            'banner_image',
-            'position',
-            'link_url',
-            'status',
+            'image',
             'description',
+            'status',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def to_representation(self, instance):
-        """Override to return full URL for banner_image"""
+        """Override to return full URL for image"""
         representation = super().to_representation(instance)
-        if representation.get('banner_image'):
-            representation['banner_image'] = f'{settings.DOMAIN}{instance.banner_image.url}'
+        if representation.get('image'):
+            representation['image'] = f'{settings.DOMAIN}{instance.image.url}'
         return representation
 
 
