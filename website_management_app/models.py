@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
@@ -75,6 +76,12 @@ class Blog(models.Model):
 class Testimonial(models.Model):
     text = models.TextField()
     customer_name = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='testimonials/', blank=True, null=True)
+    review = models.IntegerField(
+        default=5,
+        help_text="Rating from 1 to 5",
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -621,3 +628,193 @@ class NotificationSettings(models.Model):
         """Get or create the single notification settings instance"""
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+# Artwork Request Choices
+USER_TYPE_CHOICES = [
+    ('coach', 'Coach'),
+    ('parent', 'Parent'),
+    ('player', 'Player'),
+]
+
+TEAM_ATTRIBUTE_CHOICES = [
+    ('traditional', 'Traditional'),
+    ('non-traditional', 'Non-Traditional'),
+    ('combo', 'Combo'),
+]
+
+TWILL_TYPE_CHOICES = [
+    ('full_twill', 'Full Twill'),
+    ('sub_twill', 'Sub-Twill'),
+    ('silicone_twill', 'Silicone-Twill'),
+    ('fully_sublimation', 'Fully-Sublimation'),
+    ('dont_know', "Don't Know"),
+]
+
+
+class ArtworkRequest(models.Model):
+    """
+    Artwork request form submitted by users
+    """
+    full_name = models.CharField(max_length=255, help_text="Full name of the requester")
+    email = models.EmailField(help_text="Email address")
+    phone = models.CharField(max_length=20, help_text="Phone number")
+    instagram = models.CharField(max_length=255, blank=True, null=True, help_text="Instagram handle")
+    address = models.TextField(help_text="Full address")
+    organization_name = models.CharField(max_length=255, blank=True, null=True, help_text="Organization or team name")
+    user_type = models.CharField(
+        max_length=20,
+        choices=USER_TYPE_CHOICES,
+        help_text="Type of user: coach, parent, or player"
+    )
+    order_quantity = models.IntegerField(
+        default=1,
+        help_text="Order quantity",
+        validators=[MinValueValidator(1)]
+    )
+    team_color = models.CharField(max_length=255, help_text="Team color(s)")
+    need_home_away_mockup = models.BooleanField(
+        default=False,
+        help_text="Whether home/away mockup is needed"
+    )
+    team_attribute = models.CharField(
+        max_length=50,
+        choices=TEAM_ATTRIBUTE_CHOICES,
+        help_text="Team attribute: traditional, non-traditional, or combo"
+    )
+    twill_type = models.CharField(
+        max_length=50,
+        choices=TWILL_TYPE_CHOICES,
+        help_text="Type of twill needed"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Artwork Request'
+        verbose_name_plural = 'Artwork Requests'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Artwork Request by {self.full_name} - {self.organization_name or 'N/A'}"
+
+
+# Membership Request Choices
+MEMBERSHIP_USER_TYPE_CHOICES = [
+    ('coach', 'Coach'),
+    ('parent', 'Parent'),
+    ('player', 'Player'),
+]
+
+MEMBERSHIP_TWILL_CHOICES = [
+    ('youth', 'Youth'),
+    ('semi_pro', 'Semi-Pro'),
+    ('high_school', 'High School'),
+    ('mock_up', 'Mock Up'),
+    ('team_apparel', 'Team Apparel'),
+]
+
+
+class MembershipRequest(models.Model):
+    """
+    Membership request form submitted by users
+    """
+    name = models.CharField(max_length=255, help_text="Full name")
+    email = models.EmailField(help_text="Email address")
+    mailing_address = models.TextField(help_text="Mailing address")
+    organization = models.CharField(max_length=255, help_text="Organization name")
+    state = models.CharField(max_length=100, help_text="State")
+    zip_code = models.CharField(max_length=20, help_text="ZIP code")
+    phone = models.CharField(max_length=20, help_text="Phone number")
+    user_type = models.CharField(
+        max_length=20,
+        choices=MEMBERSHIP_USER_TYPE_CHOICES,
+        help_text="Type of user: coach, parent, or player"
+    )
+    twill_type = models.CharField(
+        max_length=50,
+        choices=MEMBERSHIP_TWILL_CHOICES,
+        help_text="Are you in twill: youth, semi-pro, high school, mock up, or team apparel"
+    )
+    sport = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Sport name (optional)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Membership Request'
+        verbose_name_plural = 'Membership Requests'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Membership Request by {self.name} - {self.organization}"
+
+
+class MediaLibrary(models.Model):
+    """
+    Media library for storing uploaded images
+    """
+    image = models.ImageField(
+        upload_to='media_library/',
+        help_text="Uploaded image file"
+    )
+    file_name = models.CharField(
+        max_length=255,
+        help_text="Original file name"
+    )
+    file_size = models.BigIntegerField(
+        help_text="File size in bytes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Media Library'
+        verbose_name_plural = 'Media Library'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.file_name} ({self.get_file_size_display()})"
+    
+    def get_file_size_display(self):
+        """Return human-readable file size"""
+        size = self.file_size
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.2f} {unit}"
+            size /= 1024.0
+        return f"{size:.2f} TB"
+    
+    def save(self, *args, **kwargs):
+        """Override save to extract file name and size"""
+        if self.image:
+            # Extract file name from the uploaded file
+            if not self.file_name or (hasattr(self.image, 'name') and self.image.name):
+                # Get the original filename from the uploaded file
+                if hasattr(self.image, 'name'):
+                    self.file_name = self.image.name.split('/')[-1]
+                elif hasattr(self.image, '_name'):
+                    self.file_name = self.image._name
+                else:
+                    # Fallback: use the field name
+                    self.file_name = str(self.image)
+            
+            # Get file size
+            if hasattr(self.image, 'size') and self.image.size:
+                self.file_size = self.image.size
+            elif hasattr(self.image, 'file') and self.image.file:
+                try:
+                    current_pos = self.image.file.tell()
+                    self.image.file.seek(0, 2)  # Seek to end
+                    self.file_size = self.image.file.tell()
+                    self.image.file.seek(current_pos)  # Reset to original position
+                except (AttributeError, IOError):
+                    # If we can't determine size, set to 0
+                    self.file_size = 0
+            else:
+                self.file_size = 0
+        super().save(*args, **kwargs)

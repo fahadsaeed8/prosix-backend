@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
-from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings
-from .serializers import WebsiteSettingsSerializer, BannerSerializer, BlogSerializer, TestimonialSerializer, ProductSerializer, CategorySerializer, PaymentSettingsSerializer, ShippingMethodSerializer, TaxConfigurationSerializer, GeneralSettingsSerializer, NotificationSerializer, NotificationSettingsSerializer
+from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings, ArtworkRequest, MembershipRequest, MediaLibrary
+from .serializers import WebsiteSettingsSerializer, BannerSerializer, BlogSerializer, TestimonialSerializer, ProductSerializer, CategorySerializer, PaymentSettingsSerializer, ShippingMethodSerializer, TaxConfigurationSerializer, GeneralSettingsSerializer, NotificationSerializer, NotificationSettingsSerializer, ArtworkRequestSerializer, MembershipRequestSerializer, MediaLibrarySerializer
 from django.core.exceptions import ValidationError
 
 
@@ -1472,3 +1472,280 @@ class NotificationSettingsView(APIView):
                     'message': f'Error updating notification settings: {str(e)}'
                 }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ArtworkRequestListCreateView(generics.ListCreateAPIView):
+    """List all artwork requests or create a new artwork request"""
+    queryset = ArtworkRequest.objects.all()
+    serializer_class = ArtworkRequestSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Artwork request created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class ArtworkRequestRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete an artwork request by ID"""
+    queryset = ArtworkRequest.objects.all()
+    serializer_class = ArtworkRequestSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Artwork request updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Artwork request deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class MembershipRequestListCreateView(generics.ListCreateAPIView):
+    """List all membership requests or create a new membership request"""
+    queryset = MembershipRequest.objects.all()
+    serializer_class = MembershipRequestSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Membership request created successfully'
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class MembershipRequestRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a membership request by ID"""
+    queryset = MembershipRequest.objects.all()
+    serializer_class = MembershipRequestSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Membership request updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Membership request deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class MediaLibraryListCreateView(generics.ListCreateAPIView):
+    """List all media library items or create new media library items (bulk upload up to 5 images)"""
+    queryset = MediaLibrary.objects.all()
+    serializer_class = MediaLibrarySerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def create(self, request, *args, **kwargs):
+        # Handle bulk upload - check if multiple files are provided
+        images = request.FILES.getlist('image')
+        
+        if not images:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'No images provided'
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate maximum 5 images
+        if len(images) > 5:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'Maximum 5 images can be uploaded at a time'
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate each file size (10 MB max)
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+        for image in images:
+            if image.size > MAX_FILE_SIZE:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': f'File "{image.name}" exceeds 10 MB limit. Size: {image.size / (1024 * 1024):.2f} MB'
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create media library entries for each image
+        created_items = []
+        errors = []
+        
+        for image in images:
+            try:
+                # Create a MediaLibrary instance
+                media_item = MediaLibrary(image=image)
+                media_item.save()  # This will trigger the save method to extract file_name and file_size
+                
+                serializer = self.get_serializer(media_item)
+                created_items.append(serializer.data)
+            except Exception as e:
+                errors.append(f'Error uploading {image.name}: {str(e)}')
+        
+        if errors and not created_items:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'Failed to upload images',
+                    'errors': errors
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        response_message = f'Successfully uploaded {len(created_items)} image(s)'
+        if errors:
+            response_message += f'. {len(errors)} error(s) occurred'
+        
+        return Response({
+            'success': True,
+            'response': {
+                'data': created_items,
+                'message': response_message,
+                'errors': errors if errors else None
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class MediaLibraryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a media library item by ID"""
+    queryset = MediaLibrary.objects.all()
+    serializer_class = MediaLibrarySerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({
+            'success': True,
+            'response': {
+                'data': response.data
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        # Validate file size if image is being updated
+        if 'image' in request.FILES:
+            MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+            image = request.FILES['image']
+            if image.size > MAX_FILE_SIZE:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': f'File size cannot exceed 10 MB. Current file size: {image.size / (1024 * 1024):.2f} MB'
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({
+            'success': True,
+            'response': {
+                'data': serializer.data,
+                'message': 'Media library item updated successfully'
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            'success': True,
+            'response': {
+                'message': 'Media library item deleted successfully'
+            }
+        }, status=status.HTTP_200_OK)

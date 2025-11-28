@@ -26,7 +26,13 @@ from .views import (
     NotificationMarkAsReadView,
     NotificationMarkAllAsReadView,
     NotificationDeleteAllView,
-    NotificationSettingsView
+    NotificationSettingsView,
+    ArtworkRequestListCreateView,
+    ArtworkRequestRetrieveUpdateDestroyView,
+    MembershipRequestListCreateView,
+    MembershipRequestRetrieveUpdateDestroyView,
+    MediaLibraryListCreateView,
+    MediaLibraryRetrieveUpdateDestroyView
 )
 
 urlpatterns = [
@@ -57,5 +63,11 @@ urlpatterns = [
     path('shipping-methods/', ShippingMethodListCreateView.as_view()),
     path('shipping-methods/<int:id>/', ShippingMethodRetrieveUpdateDestroyView.as_view()),
     path('shipping-methods/<int:id>/toggle-status/', ShippingMethodToggleStatusView.as_view()),
+    path('artwork-requests/', ArtworkRequestListCreateView.as_view()),
+    path('artwork-requests/<int:id>/', ArtworkRequestRetrieveUpdateDestroyView.as_view()),
+    path('membership-requests/', MembershipRequestListCreateView.as_view()),
+    path('membership-requests/<int:id>/', MembershipRequestRetrieveUpdateDestroyView.as_view()),
+    path('media-library/', MediaLibraryListCreateView.as_view()),
+    path('media-library/<int:id>/', MediaLibraryRetrieveUpdateDestroyView.as_view()),
 ]
 

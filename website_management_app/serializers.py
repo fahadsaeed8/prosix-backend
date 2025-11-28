@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings
+from .models import WebsiteSettings, Banner, Blog, Testimonial, Product, Category, PaymentSettings, ShippingMethod, TaxConfiguration, GeneralSettings, Notification, NotificationSettings, ArtworkRequest, MembershipRequest, MediaLibrary
 from django.conf import settings
 
 
@@ -132,10 +132,25 @@ class TestimonialSerializer(serializers.ModelSerializer):
             'id',
             'text',
             'customer_name',
+            'image',
+            'review',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_review(self, value):
+        """Validate that review is between 1 and 5"""
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Review must be a number between 1 and 5")
+        return value
+    
+    def to_representation(self, instance):
+        """Override to return full URL for image"""
+        representation = super().to_representation(instance)
+        if representation.get('image'):
+            representation['image'] = f'{settings.DOMAIN}{instance.image.url}'
+        return representation
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -370,3 +385,96 @@ class NotificationSettingsSerializer(serializers.ModelSerializer):
                 "Admin phone number is required when SMS notifications are enabled"
             )
         return value
+
+
+class ArtworkRequestSerializer(serializers.ModelSerializer):
+    """Serializer for Artwork Request"""
+    
+    class Meta:
+        model = ArtworkRequest
+        fields = [
+            'id',
+            'full_name',
+            'email',
+            'phone',
+            'instagram',
+            'address',
+            'organization_name',
+            'user_type',
+            'order_quantity',
+            'team_color',
+            'need_home_away_mockup',
+            'team_attribute',
+            'twill_type',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def validate_order_quantity(self, value):
+        """Validate that order quantity is at least 1"""
+        if value < 1:
+            raise serializers.ValidationError("Order quantity must be at least 1")
+        return value
+
+
+class MembershipRequestSerializer(serializers.ModelSerializer):
+    """Serializer for Membership Request"""
+    
+    class Meta:
+        model = MembershipRequest
+        fields = [
+            'id',
+            'name',
+            'email',
+            'mailing_address',
+            'organization',
+            'state',
+            'zip_code',
+            'phone',
+            'user_type',
+            'twill_type',
+            'sport',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class MediaLibrarySerializer(serializers.ModelSerializer):
+    """Serializer for Media Library"""
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB in bytes
+    
+    class Meta:
+        model = MediaLibrary
+        fields = [
+            'id',
+            'image',
+            'file_name',
+            'file_size',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'file_name', 'file_size', 'created_at', 'updated_at')
+    
+    def validate_image(self, value):
+        """Validate file size (max 10 MB)"""
+        if value.size > self.MAX_FILE_SIZE:
+            raise serializers.ValidationError(
+                f"File size cannot exceed 10 MB. Current file size: {value.size / (1024 * 1024):.2f} MB"
+            )
+        
+        # Validate file type (only images)
+        if not value.content_type.startswith('image/'):
+            raise serializers.ValidationError("Only image files are allowed")
+        
+        return value
+    
+    def to_representation(self, instance):
+        """Override to return full URL for image and human-readable file size"""
+        representation = super().to_representation(instance)
+        if representation.get('image'):
+            representation['image'] = f'{settings.DOMAIN}{instance.image.url}'
+        # Add human-readable file size
+        representation['file_size_display'] = instance.get_file_size_display()
+        return representation
