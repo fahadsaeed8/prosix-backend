@@ -404,6 +404,10 @@ class ArtworkRequestSerializer(serializers.ModelSerializer):
             'need_home_away_mockup',
             'team_attribute',
             'twill_type',
+            'sports',
+            'product_mockup',
+            'additional_details',
+            'how_did_you_hear',
             'created_at',
             'updated_at'
         ]
@@ -414,6 +418,24 @@ class ArtworkRequestSerializer(serializers.ModelSerializer):
         if value < 1:
             raise serializers.ValidationError("Order quantity must be at least 1")
         return value
+    
+    def validate_sports(self, value):
+        """Validate that sports is a list with max 2 items"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Sports must be a list")
+        if len(value) > 2:
+            raise serializers.ValidationError("Maximum 2 sports are allowed")
+        for sport in value:
+            if not isinstance(sport, str):
+                raise serializers.ValidationError("Each sport must be a string")
+        return value
+    
+    def to_representation(self, instance):
+        """Override to return full URL for product_mockup"""
+        representation = super().to_representation(instance)
+        if representation.get('product_mockup'):
+            representation['product_mockup'] = f'{settings.DOMAIN}{instance.product_mockup.url}'
+        return representation
 
 
 class MembershipRequestSerializer(serializers.ModelSerializer):

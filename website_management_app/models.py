@@ -650,6 +650,16 @@ TWILL_TYPE_CHOICES = [
 ]
 
 
+HOW_DID_YOU_HEAR_CHOICES = [
+    ('social_media', 'Social Media'),
+    ('google_search', 'Google Search'),
+    ('referral', 'Referral'),
+    ('advertisement', 'Advertisement'),
+    ('trade_show', 'Trade Show'),
+    ('other', 'Other'),
+]
+
+
 class ArtworkRequest(models.Model):
     """
     Artwork request form submitted by users
@@ -684,6 +694,30 @@ class ArtworkRequest(models.Model):
         max_length=50,
         choices=TWILL_TYPE_CHOICES,
         help_text="Type of twill needed"
+    )
+    # New fields
+    sports = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of sports (max 2)"
+    )
+    product_mockup = models.ImageField(
+        upload_to='artwork_requests/',
+        blank=True,
+        null=True,
+        help_text="Product mockup image"
+    )
+    additional_details = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional details or notes"
+    )
+    how_did_you_hear = models.CharField(
+        max_length=50,
+        choices=HOW_DID_YOU_HEAR_CHOICES,
+        blank=True,
+        null=True,
+        help_text="How did you hear about us"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
