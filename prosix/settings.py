@@ -28,14 +28,12 @@ SECRET_KEY = 'django-insecure-1wt&w^73zv#g17)0kn0lchr$uvmnzqosinnj3mta2d108pxj7u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','https://hyperrational-alonso-nonautomatically.ngrok-free.dev/','https://main.d27iouqq49jjmt.amplifyapp.com/']
+ALLOWED_HOSTS = ['*', 'prosix.online', 'www.prosix.online', 'https://hyperrational-alonso-nonautomatically.ngrok-free.dev/', 'https://main.d27iouqq49jjmt.amplifyapp.com/']
 
-
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://prod-api.mr-corp.ca',
-#     'https://3.97.243.13',
-
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    'https://prosix.online',
+    'https://www.prosix.online',
+]
 
 # Application definition
 
@@ -119,7 +117,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 3,
+    'PAGE_SIZE': 20,
     'DEFAULT_MAX_PAGE_SIZE': 104857600,
   }
 
@@ -174,4 +172,4 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DOMAIN = 'http://192.168.0.101:8000'
+DOMAIN = 'https://prosix.online'

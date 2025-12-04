@@ -1,6 +1,6 @@
 asgiref==3.8.1
 dj-database-url==3.0.0
-Django==5.2.1
+Django==4.2.27
 django-cors-headers==4.7.0
 djangorestframework==3.16.0
 gunicorn==23.0.0
