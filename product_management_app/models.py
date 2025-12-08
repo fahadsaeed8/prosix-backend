@@ -24,21 +24,21 @@ class Shirt(models.Model):
     sub_category = models.ForeignKey(ShirtSubCategory, related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
     
     # New fields
-    price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price of the shirt")
-    sku = models.CharField(max_length=100, unique=True, help_text="Stock Keeping Unit")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Price of the shirt")
+    sku = models.CharField(max_length=100, unique=True, blank=True, null=True, help_text="Stock Keeping Unit")
     description = models.TextField(blank=True, null=True, help_text="Description of the shirt")
 
-    # White images (required)
-    white_front = models.ImageField(upload_to='shirts/white/', help_text="White front image")
-    white_back = models.ImageField(upload_to='shirts/white/', help_text="White back image")
-    white_left = models.ImageField(upload_to='shirts/white/', help_text="White left image")
-    white_right = models.ImageField(upload_to='shirts/white/', help_text="White right image")
+    # White images
+    white_front = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White front image")
+    white_back = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White back image")
+    white_left = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White left image")
+    white_right = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White right image")
 
-    # Black images (required)
-    black_front = models.ImageField(upload_to='shirts/black/', help_text="Black front image")
-    black_back = models.ImageField(upload_to='shirts/black/', help_text="Black back image")
-    black_left = models.ImageField(upload_to='shirts/black/', help_text="Black left image")
-    black_right = models.ImageField(upload_to='shirts/black/', help_text="Black right image")
+    # Black images
+    black_front = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black front image")
+    black_back = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black back image")
+    black_left = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black left image")
+    black_right = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black right image")
 
     # SVG images (optional)
     svg_front = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG front file (optional)")

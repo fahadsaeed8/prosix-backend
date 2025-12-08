@@ -38,7 +38,7 @@ class ShirtSerializer(serializers.ModelSerializer):
     other_images_upload = serializers.ListField(
         child=serializers.ImageField(),
         write_only=True,
-        required=True,
+        required=False,
         min_length=1,
         max_length=10,
         help_text="Upload 1-10 additional images"
@@ -91,20 +91,19 @@ class ShirtSerializer(serializers.ModelSerializer):
     
     def validate_other_images_upload(self, value):
         """Validate other images count (1-10)"""
-        if len(value) < 1:
-            raise serializers.ValidationError("At least 1 additional image is required")
-        if len(value) > 10:
+        if value and len(value) > 10:
             raise serializers.ValidationError("Maximum 10 additional images allowed")
         return value
     
     def create(self, validated_data):
         """Create shirt and associated images"""
-        other_images_data = validated_data.pop('other_images_upload', [])
+        other_images_data = validated_data.pop('other_images_upload', None)
         shirt = Shirt.objects.create(**validated_data)
         
-        # Create ShirtImage instances
-        for image in other_images_data:
-            ShirtImage.objects.create(shirt=shirt, image=image)
+        # Create ShirtImage instances if provided
+        if other_images_data:
+            for image in other_images_data:
+                ShirtImage.objects.create(shirt=shirt, image=image)
         
         return shirt
     
