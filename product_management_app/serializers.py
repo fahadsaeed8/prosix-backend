@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
+from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
 from django.conf import settings
 
 
@@ -15,28 +15,125 @@ class ShirtSubCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
 
+class ShirtImageSerializer(serializers.ModelSerializer):
+    """Serializer for ShirtImage (additional images)"""
+    
+    class Meta:
+        model = ShirtImage
+        fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def to_representation(self, instance):
+        """Override to return full URL for image"""
+        representation = super().to_representation(instance)
+        if representation.get('image'):
+            representation['image'] = f'{settings.DOMAIN}{instance.image.url}'
+        return representation
+
+
 class ShirtSerializer(serializers.ModelSerializer):
     category_detail = ShirtCategorySerializer(source='category', read_only=True)
     sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
+    other_images = ShirtImageSerializer(many=True, read_only=True)
+    other_images_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=True,
+        min_length=1,
+        max_length=10,
+        help_text="Upload 1-10 additional images"
+    )
     
     class Meta:
         model = Shirt
-        fields = '__all__'
-        read_only_fields = ('created_at', 'updated_at')
+        fields = [
+            'id',
+            'name',
+            'category',
+            'category_detail',
+            'sub_category',
+            'sub_category_detail',
+            'price',
+            'sku',
+            'description',
+            'white_front',
+            'white_back',
+            'white_left',
+            'white_right',
+            'black_front',
+            'black_back',
+            'black_left',
+            'black_right',
+            'svg_front',
+            'svg_back',
+            'svg_left',
+            'svg_right',
+            'other_images',
+            'other_images_upload',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
         extra_kwargs = {
             'category': {'write_only': True},
-            'sub_category_detail': {'read_only': True}
+            'sub_category': {'write_only': True},
+            'svg_front': {'required': False},
+            'svg_back': {'required': False},
+            'svg_left': {'required': False},
+            'svg_right': {'required': False},
         }
+    
+    def validate_price(self, value):
+        """Validate that price is positive"""
+        if value <= 0:
+            raise serializers.ValidationError("Price must be greater than 0")
+        return value
+    
+    def validate_other_images_upload(self, value):
+        """Validate other images count (1-10)"""
+        if len(value) < 1:
+            raise serializers.ValidationError("At least 1 additional image is required")
+        if len(value) > 10:
+            raise serializers.ValidationError("Maximum 10 additional images allowed")
+        return value
+    
+    def create(self, validated_data):
+        """Create shirt and associated images"""
+        other_images_data = validated_data.pop('other_images_upload', [])
+        shirt = Shirt.objects.create(**validated_data)
+        
+        # Create ShirtImage instances
+        for image in other_images_data:
+            ShirtImage.objects.create(shirt=shirt, image=image)
+        
+        return shirt
+    
+    def update(self, instance, validated_data):
+        """Update shirt and optionally update images"""
+        other_images_data = validated_data.pop('other_images_upload', None)
+        
+        # Update shirt fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # If new images provided, replace old ones
+        if other_images_data is not None:
+            # Delete existing images
+            instance.other_images.all().delete()
+            # Create new images
+            for image in other_images_data:
+                ShirtImage.objects.create(shirt=instance, image=image)
+        
+        return instance
     
     def to_representation(self, instance):
         """Override to return full URLs for file fields"""
         representation = super().to_representation(instance)
         file_fields = [
-            'svg_file', 'white_base_file', 'black_base_file',
-            'front_base', 'front_child1', 'front_child2', 'front_child3',
-            'back_base', 'back_child1', 'back_child2', 'back_child3',
-            'left_base', 'left_child1', 'left_child2', 'left_child3',
-            'right_base', 'right_child1', 'right_child2', 'right_child3'
+            'white_front', 'white_back', 'white_left', 'white_right',
+            'black_front', 'black_back', 'black_left', 'black_right',
+            'svg_front', 'svg_back', 'svg_left', 'svg_right'
         ]
         for field in file_fields:
             if representation.get(field):
@@ -77,10 +174,39 @@ class ShirtListSerializer(serializers.ModelSerializer):
     user_shirts = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
     category_detail = ShirtCategorySerializer(source='category', read_only=True)
+    sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
+    other_images = ShirtImageSerializer(many=True, read_only=True)
     
     class Meta:
         model = Shirt
-        fields = '__all__'
+        fields = [
+            'id',
+            'name',
+            'category',
+            'category_detail',
+            'sub_category',
+            'sub_category_detail',
+            'price',
+            'sku',
+            'description',
+            'white_front',
+            'white_back',
+            'white_left',
+            'white_right',
+            'black_front',
+            'black_back',
+            'black_left',
+            'black_right',
+            'svg_front',
+            'svg_back',
+            'svg_left',
+            'svg_right',
+            'other_images',
+            'user_shirts',
+            'is_favorite',
+            'created_at',
+            'updated_at'
+        ]
     
     def get_is_favorite(self, obj):
         user = self.context.get('user')
@@ -99,11 +225,9 @@ class ShirtListSerializer(serializers.ModelSerializer):
         """Override to return full URLs for file fields"""
         representation = super().to_representation(instance)
         file_fields = [
-            'svg_file', 'white_base_file', 'black_base_file',
-            'front_base', 'front_child1', 'front_child2', 'front_child3',
-            'back_base', 'back_child1', 'back_child2', 'back_child3',
-            'left_base', 'left_child1', 'left_child2', 'left_child3',
-            'right_base', 'right_child1', 'right_child2', 'right_child3'
+            'white_front', 'white_back', 'white_left', 'white_right',
+            'black_front', 'black_back', 'black_left', 'black_right',
+            'svg_front', 'svg_back', 'svg_left', 'svg_right'
         ]
         for field in file_fields:
             if representation.get(field):

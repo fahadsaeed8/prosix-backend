@@ -22,36 +22,51 @@ class Shirt(models.Model):
     name = models.CharField(max_length=255)
     category = models.ForeignKey(ShirtCategory, related_name='shirts_category', on_delete=models.CASCADE) 
     sub_category = models.ForeignKey(ShirtSubCategory, related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
-
-    svg_file = models.FileField(upload_to='shirts/svg/', blank=True, null=True)
-    white_base_file = models.FileField(upload_to='shirts/white_base/', blank=True, null=True)
-    black_base_file = models.FileField(upload_to='shirts/black_base/', blank=True, null=True)
-
-    front_base = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    front_child1 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    front_child2 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    front_child3 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-
-    back_base = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    back_child1 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    back_child2 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    back_child3 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-
-    left_base = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    left_child1 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    left_child2 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    left_child3 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
     
-    right_base = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    right_child1 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    right_child2 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
-    right_child3 = models.FileField(upload_to='shirts/Shirt_images/', blank=True, null=True)
+    # New fields
+    price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price of the shirt")
+    sku = models.CharField(max_length=100, unique=True, help_text="Stock Keeping Unit")
+    description = models.TextField(blank=True, null=True, help_text="Description of the shirt")
+
+    # White images (required)
+    white_front = models.ImageField(upload_to='shirts/white/', help_text="White front image")
+    white_back = models.ImageField(upload_to='shirts/white/', help_text="White back image")
+    white_left = models.ImageField(upload_to='shirts/white/', help_text="White left image")
+    white_right = models.ImageField(upload_to='shirts/white/', help_text="White right image")
+
+    # Black images (required)
+    black_front = models.ImageField(upload_to='shirts/black/', help_text="Black front image")
+    black_back = models.ImageField(upload_to='shirts/black/', help_text="Black back image")
+    black_left = models.ImageField(upload_to='shirts/black/', help_text="Black left image")
+    black_right = models.ImageField(upload_to='shirts/black/', help_text="Black right image")
+
+    # SVG images (optional)
+    svg_front = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG front file (optional)")
+    svg_back = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG back file (optional)")
+    svg_left = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG left file (optional)")
+    svg_right = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG right file (optional)")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.sku}"
+
+
+class ShirtImage(models.Model):
+    """Additional images for shirts (min 1, max 10 per shirt)"""
+    shirt = models.ForeignKey(Shirt, related_name='other_images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='shirts/other_images/', help_text="Additional shirt image")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Shirt Image'
+        verbose_name_plural = 'Shirt Images'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Image for {self.shirt.name}"
 
 
 class UserShirt(models.Model):
