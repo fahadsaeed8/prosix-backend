@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from website_management_app.models import Category
 # Create your models here.
 
 class ShirtCategory(models.Model):
@@ -20,7 +21,7 @@ class ShirtSubCategory(models.Model):
     
 class Shirt(models.Model):
     name = models.CharField(max_length=255)
-    category = models.ForeignKey(ShirtCategory, related_name='shirts_category', on_delete=models.CASCADE) 
+    category = models.ForeignKey(Category, related_name='shirts_category', on_delete=models.CASCADE) 
     sub_category = models.ForeignKey(ShirtSubCategory, related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
     
     # New fields

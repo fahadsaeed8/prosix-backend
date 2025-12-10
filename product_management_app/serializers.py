@@ -1,6 +1,15 @@
 from rest_framework import serializers
 from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
+from website_management_app.models import Category
 from django.conf import settings
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Serializer for Category (from website_management_app)"""
+    class Meta:
+        model = Category
+        fields = ['id', 'category_name', 'icon', 'description', 'color', 'created_at', 'updated_at']
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class ShirtCategorySerializer(serializers.ModelSerializer):
@@ -32,7 +41,7 @@ class ShirtImageSerializer(serializers.ModelSerializer):
 
 
 class ShirtSerializer(serializers.ModelSerializer):
-    category_detail = ShirtCategorySerializer(source='category', read_only=True)
+    category_detail = CategorySerializer(source='category', read_only=True)
     sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
     other_images_upload = serializers.ListField(
@@ -172,7 +181,7 @@ class UserShirtGETSerializer(serializers.ModelSerializer):
 class ShirtListSerializer(serializers.ModelSerializer):
     user_shirts = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
-    category_detail = ShirtCategorySerializer(source='category', read_only=True)
+    category_detail = CategorySerializer(source='category', read_only=True)
     sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
     
