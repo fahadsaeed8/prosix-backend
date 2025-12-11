@@ -32,12 +32,7 @@ class ShirtImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def to_representation(self, instance):
-        """Override to return full URL for image"""
-        representation = super().to_representation(instance)
-        if representation.get('image'):
-            representation['image'] = f'{settings.DOMAIN}{instance.image.url}'
-        return representation
+
 
 
 class ShirtSerializer(serializers.ModelSerializer):
@@ -135,18 +130,7 @@ class ShirtSerializer(serializers.ModelSerializer):
         
         return instance
     
-    def to_representation(self, instance):
-        """Override to return full URLs for file fields"""
-        representation = super().to_representation(instance)
-        file_fields = [
-            'white_front', 'white_back', 'white_left', 'white_right',
-            'black_front', 'black_back', 'black_left', 'black_right',
-            'svg_front', 'svg_back', 'svg_left', 'svg_right'
-        ]
-        for field in file_fields:
-            if representation.get(field):
-                representation[field] = f'{settings.DOMAIN}{representation[field]}'
-        return representation
+
 
 
        
@@ -229,18 +213,7 @@ class ShirtListSerializer(serializers.ModelSerializer):
         user_shirts = UserShirt.objects.filter(shirt=obj)
         return UserShirtGETSerializer(user_shirts, many=True, context={'user':user}).data
     
-    def to_representation(self, instance):
-        """Override to return full URLs for file fields"""
-        representation = super().to_representation(instance)
-        file_fields = [
-            'white_front', 'white_back', 'white_left', 'white_right',
-            'black_front', 'black_back', 'black_left', 'black_right',
-            'svg_front', 'svg_back', 'svg_left', 'svg_right'
-        ]
-        for field in file_fields:
-            if representation.get(field):
-                representation[field] = f'{settings.DOMAIN}{representation[field]}'
-        return representation
+
     
 class FavoriteShirtSerializer(serializers.ModelSerializer):
     class Meta:
@@ -285,20 +258,7 @@ class CustomizerSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def to_representation(self, instance):
-        """Override to return full URLs for image/file fields"""
-        representation = super().to_representation(instance)
-        file_fields = [
-            'front_black_layer', 'front_white_layer', 'front_svg_layer',
-            'back_black_layer', 'back_white_layer', 'back_svg_layer',
-            'left_black_layer', 'left_white_layer', 'left_svg_layer',
-            'right_black_layer', 'right_white_layer', 'right_svg_layer'
-        ]
-        for field in file_fields:
-            field_obj = getattr(instance, field, None)
-            if field_obj:
-                representation[field] = f'{settings.DOMAIN}{field_obj.url}'
-        return representation
+
 
 
 class PatternSerializer(serializers.ModelSerializer):
@@ -318,12 +278,7 @@ class PatternSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def to_representation(self, instance):
-        """Override to return full URL for pattern_image"""
-        representation = super().to_representation(instance)
-        if representation.get('pattern_image'):
-            representation['pattern_image'] = f'{settings.DOMAIN}{instance.pattern_image.url}'
-        return representation
+
 
 
 class ColorSerializer(serializers.ModelSerializer):
@@ -390,12 +345,7 @@ class FontSerializer(serializers.ModelSerializer):
             )
         return value
     
-    def to_representation(self, instance):
-        """Override to return full URL for font_file"""
-        representation = super().to_representation(instance)
-        if representation.get('font_file'):
-            representation['font_file'] = f'{settings.DOMAIN}{instance.font_file.url}'
-        return representation
+
 
 
 class OrderSerializer(serializers.ModelSerializer):
