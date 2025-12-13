@@ -57,24 +57,19 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
     def _normalize_colors(self, validated_data):
         colors_input = validated_data.pop('svgPartColors', None)
         if colors_input and isinstance(colors_input, dict):
-            # Build per-side color arrays from keys like 'front_0', 'front_1', ...
-            sides = {'front': [], 'back': [], 'left': [], 'right': []}
-            for composite_key, color_value in colors_input.items():
-                if '_' not in composite_key:
-                    continue
-                side, idx_str = composite_key.split('_', 1)
-                if side not in sides:
-                    continue
-                try:
-                    idx = int(idx_str)
-                except (ValueError, TypeError):
-                    continue
-                arr = sides[side]
-                if idx >= len(arr):
-                    arr.extend([None] * (idx - len(arr) + 1))
-                arr[idx] = color_value
-            # Keep holes (None values) to preserve original indices
-            validated_data['colors'] = sides
+            # Case A: per-side dicts (ids -> colors)
+            if all(isinstance(v, dict) for v in colors_input.values()):
+                # Flatten nested per-side dicts to flat keys like 'front_1'
+                flat_colors = {}
+                for side, inner in colors_input.items():
+                    if not isinstance(inner, dict):
+                        continue
+                    for idx_str, color in inner.items():
+                        flat_colors[f"{side}_{idx_str}"] = color
+                validated_data['colors'] = flat_colors
+            else:
+                # Case B: flat per-key like 'front_0'
+                validated_data['colors'] = colors_input
         return validated_data
 
     def create(self, validated_data):
@@ -92,17 +87,23 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
         """
         representation = super().to_representation(instance)
         colors = representation.get('colors', {}) or {}
-        # Build per-key map like 'front_0', 'front_1', etc.
+        # If colors are flat id->color, return as-is
+        if isinstance(colors, dict) and all(isinstance(v, (str, type(None))) for v in colors.values()):
+            representation['svgPartColors'] = colors
+            return representation
+        # Otherwise, flatten per-side dicts to flat keys
         svg_part_colors = {}
-        for side, values in colors.items():
-            if not isinstance(values, (list, tuple)):
-                continue
-            for idx, color in enumerate(values):
-                if color is None:
-                    continue
-                key = f"{side}_{idx}"
-                svg_part_colors[key] = color
+        if isinstance(colors, dict):
+            for side, inner in colors.items():
+                if isinstance(inner, dict):
+                    for idx, color in inner.items():
+                        if color is None:
+                            continue
+                        key = f"{side}_{idx}"
+                        svg_part_colors[key] = color
         representation['svgPartColors'] = svg_part_colors
+        # Do not expose the internal 'colors' structure in the response to keep output aligned with input
+        representation.pop('colors', None)
         return representation
 
 
