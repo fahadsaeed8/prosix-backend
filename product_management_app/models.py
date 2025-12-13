@@ -71,14 +71,14 @@ class ShirtImage(models.Model):
 
 
 class ShirtDraft(models.Model):
-    """Draft configuration for a shirt (color per-part mappings)."""
+    """Draft configuration for a shirt (svg part colors stored as flat map)."""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('completed', 'Completed'),
     ]
     shirt = models.OneToOneField(Shirt, related_name='draft', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    colors = models.JSONField(default=dict, help_text='Colors for front, back, left, right (5 each)')
+    svg_part_colors = models.JSONField(default=dict, blank=True, help_text="Flat map of svg part colors, keys like 'front_0'")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

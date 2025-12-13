@@ -36,73 +36,30 @@ class ShirtImageSerializer(serializers.ModelSerializer):
 class ShirtDraftSerializer(serializers.ModelSerializer):
     """
     Serializer for ShirtDraft.
-    Accepts a frontend-friendly payload 'svgPartColors' which is a map of
-    keys like '<side>_<index>' to a hex color, and converts it into the
-    internal 'colors' JSON structure: {'front': [...], 'back': [...], 'left': [...], 'right': [...]}
+    Stores colors directly as a flat map in svg_part_colors and exposes it as
+    svgPartColors in the API payload.
     """
-    # Accept the frontend's color map payload
-    svgPartColors = serializers.JSONField(write_only=True, required=False)
+    svgPartColors = serializers.JSONField(source='svg_part_colors')
     class Meta:
         model = ShirtDraft
         fields = [
             'id',
             'shirt',
             'status',
-            'colors',
             'svgPartColors',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
-    def _normalize_colors(self, validated_data):
-        colors_input = validated_data.pop('svgPartColors', None)
-        if colors_input and isinstance(colors_input, dict):
-            # Case A: per-side dicts (ids -> colors)
-            if all(isinstance(v, dict) for v in colors_input.values()):
-                # Flatten nested per-side dicts to flat keys like 'front_1'
-                flat_colors = {}
-                for side, inner in colors_input.items():
-                    if not isinstance(inner, dict):
-                        continue
-                    for idx_str, color in inner.items():
-                        flat_colors[f"{side}_{idx_str}"] = color
-                validated_data['colors'] = flat_colors
-            else:
-                # Case B: flat per-key like 'front_0'
-                validated_data['colors'] = colors_input
-        return validated_data
 
     def create(self, validated_data):
-        validated_data = self._normalize_colors(validated_data)
         return ShirtDraft.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        validated_data = self._normalize_colors(validated_data)
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
-        """
-        Add a read-only 'svgPartColors' field to the output that mirrors the
-        internal 'colors' structure back into the frontend-friendly map.
-        """
         representation = super().to_representation(instance)
-        colors = representation.get('colors', {}) or {}
-        # If colors are flat id->color, return as-is
-        if isinstance(colors, dict) and all(isinstance(v, (str, type(None))) for v in colors.values()):
-            representation['svgPartColors'] = colors
-            return representation
-        # Otherwise, flatten per-side dicts to flat keys
-        svg_part_colors = {}
-        if isinstance(colors, dict):
-            for side, inner in colors.items():
-                if isinstance(inner, dict):
-                    for idx, color in inner.items():
-                        if color is None:
-                            continue
-                        key = f"{side}_{idx}"
-                        svg_part_colors[key] = color
-        representation['svgPartColors'] = svg_part_colors
-        # Do not expose the internal 'colors' structure in the response to keep output aligned with input
         representation.pop('colors', None)
         return representation
 
