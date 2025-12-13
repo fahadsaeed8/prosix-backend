@@ -76,7 +76,29 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
             # Remove None holes
             for side in sides:
                 sides[side] = [c for c in sides[side] if c is not None]
-            validated_data['colors'] = sides
+            # If normalization didn't populate any colors (edge case),
+            # try a fallback pass using raw keys (e.g., 'front_0', 'left_4', ...)
+            if all(len(v) == 0 for v in sides.values()):
+                fallback = {'front': [], 'back': [], 'left': [], 'right': []}
+                for composite_key, color_value in colors_input.items():
+                    if '_' not in composite_key:
+                        continue
+                    side, idx_str = composite_key.split('_', 1)
+                    if side not in fallback:
+                        continue
+                    try:
+                        idx = int(idx_str)
+                    except (ValueError, TypeError):
+                        continue
+                    arr = fallback[side]
+                    if idx >= len(arr):
+                        arr.extend([None] * (idx - len(arr) + 1))
+                    arr[idx] = color_value
+                for side in fallback:
+                    fallback[side] = [c for c in fallback[side] if c is not None]
+                validated_data['colors'] = fallback
+            else:
+                validated_data['colors'] = sides
         return validated_data
 
     def create(self, validated_data):
