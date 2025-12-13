@@ -428,22 +428,3 @@ class GrowthTrendReport(models.Model):
     
     def __str__(self):
         return f"Growth Trend Report - {self.report_date}"
-
-
-class ShirtDraft(models.Model):
-    """
-    Model to store draft of a shirt.
-    One shirt can only have one draft.
-    """
-    shirt = models.OneToOneField(Shirt, related_name='draft', on_delete=models.CASCADE)
-    status_choices = [
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-    ]
-    status = models.CharField(max_length=20, choices=status_choices, default='pending')
-    colors = models.JSONField(default=dict, help_text="Colors for front, back, left, right (5 each)")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Draft for {self.shirt.name} ({self.status})"

@@ -33,6 +33,60 @@ class ShirtImageSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
     
 
+class ShirtDraftSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ShirtDraft.
+    Accepts a frontend-friendly payload 'svgPartColors' which is a map of
+    keys like '<side>_<index>' to a hex color, and converts it into the
+    internal 'colors' JSON structure: {'front': [...], 'back': [...], 'left': [...], 'right': [...]}
+    """
+    # Accept the frontend's color map payload
+    svgPartColors = serializers.JSONField(write_only=True, required=False)
+    class Meta:
+        model = ShirtDraft
+        fields = [
+            'id',
+            'shirt',
+            'status',
+            'colors',
+            'svgPartColors',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    def _normalize_colors(self, validated_data):
+        colors_input = validated_data.pop('svgPartColors', None)
+        if colors_input and isinstance(colors_input, dict):
+            # Build per-side color arrays from keys like 'front_0', 'front_1', ...
+            sides = {'front': [], 'back': [], 'left': [], 'right': []}
+            for composite_key, color_value in colors_input.items():
+                if '_' not in composite_key:
+                    continue
+                side, idx_str = composite_key.split('_', 1)
+                if side not in sides:
+                    continue
+                try:
+                    idx = int(idx_str)
+                except (ValueError, TypeError):
+                    continue
+                arr = sides[side]
+                if idx >= len(arr):
+                    arr.extend([None] * (idx - len(arr) + 1))
+                arr[idx] = color_value
+            # Remove None holes
+            for side in sides:
+                sides[side] = [c for c in sides[side] if c is not None]
+            validated_data['colors'] = sides
+        return validated_data
+
+    def create(self, validated_data):
+        validated_data = self._normalize_colors(validated_data)
+        return ShirtDraft.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data = self._normalize_colors(validated_data)
+        return super().update(instance, validated_data)
+
 
 
 class ShirtSerializer(serializers.ModelSerializer):
@@ -475,40 +529,3 @@ class GrowthTrendReportSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
-
-
-class ShirtDraftSerializer(serializers.ModelSerializer):
-    """Serializer for ShirtDraft"""
-
-    class Meta:
-        model = ShirtDraft
-        fields = ['id', 'shirt', 'status', 'colors', 'created_at', 'updated_at']
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-    def validate_colors(self, value):
-        """
-        Validate that colors JSON has keys: front, back, left, right.
-        And each key has a list of exactly 5 colors.
-        """
-        required_keys = ['front', 'back', 'left', 'right']
-        
-        # Check if value is a dict
-        if not isinstance(value, dict):
-             raise serializers.ValidationError("Colors must be a JSON object.")
-
-        for key in required_keys:
-            if key not in value:
-                raise serializers.ValidationError(f"Missing key: {key}")
-            
-            colors_list = value[key]
-            if not isinstance(colors_list, list):
-                raise serializers.ValidationError(f"Value for {key} must be a list.")
-            
-            if len(colors_list) != 5:
-                raise serializers.ValidationError(f"Value for {key} must contain exactly 5 colors.")
-            
-            # Check if all items in list are strings (optional but good)
-            if not all(isinstance(color, str) for color in colors_list):
-                 raise serializers.ValidationError(f"All items in {key} must be color strings.")
-                 
-        return value
