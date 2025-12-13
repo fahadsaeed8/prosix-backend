@@ -70,6 +70,21 @@ class ShirtImage(models.Model):
         return f"Image for {self.shirt.name}"
 
 
+class ShirtDraft(models.Model):
+    """Draft configuration for a shirt (color per-part mappings)."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+    ]
+    shirt = models.OneToOneField(Shirt, related_name='draft', on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    colors = models.JSONField(default=dict, help_text='Colors for front, back, left, right (5 each)')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Draft for {self.shirt.name} - {self.get_status_display()}"
+
 class UserShirt(models.Model):
     user = models.ForeignKey(User, related_name='usershirts_user', on_delete=models.CASCADE)
     shirt = models.ForeignKey(Shirt, related_name='usershirts_shirt', on_delete=models.CASCADE)
