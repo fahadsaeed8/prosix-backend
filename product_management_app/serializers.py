@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
+from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
 from website_management_app.models import Category
 from django.conf import settings
 
@@ -475,3 +475,40 @@ class GrowthTrendReportSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class ShirtDraftSerializer(serializers.ModelSerializer):
+    """Serializer for ShirtDraft"""
+
+    class Meta:
+        model = ShirtDraft
+        fields = ['id', 'shirt', 'status', 'colors', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def validate_colors(self, value):
+        """
+        Validate that colors JSON has keys: front, back, left, right.
+        And each key has a list of exactly 5 colors.
+        """
+        required_keys = ['front', 'back', 'left', 'right']
+        
+        # Check if value is a dict
+        if not isinstance(value, dict):
+             raise serializers.ValidationError("Colors must be a JSON object.")
+
+        for key in required_keys:
+            if key not in value:
+                raise serializers.ValidationError(f"Missing key: {key}")
+            
+            colors_list = value[key]
+            if not isinstance(colors_list, list):
+                raise serializers.ValidationError(f"Value for {key} must be a list.")
+            
+            if len(colors_list) != 5:
+                raise serializers.ValidationError(f"Value for {key} must contain exactly 5 colors.")
+            
+            # Check if all items in list are strings (optional but good)
+            if not all(isinstance(color, str) for color in colors_list):
+                 raise serializers.ValidationError(f"All items in {key} must be color strings.")
+                 
+        return value

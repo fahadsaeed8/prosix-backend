@@ -1,6 +1,6 @@
-from rest_framework import generics
-from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport
-from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer
+from rest_framework import generics, viewsets
+from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
+from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer, ShirtDraftSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -944,6 +944,30 @@ class GrowthTrendReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyA
                 'message': 'Growth trend report deleted successfully'
             }
         }, status=status.HTTP_200_OK)
+
+class ShirtDraftViewSet(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView, viewsets.GenericViewSet):
+    """
+    ViewSet for ShirtDraft.
+    Lookup by shirt_id instead of draft id.
+    """
+    queryset = ShirtDraft.objects.all()
+    serializer_class = ShirtDraftSerializer
+    lookup_field = 'shirt'
+
+    def create(self, request, *args, **kwargs):
+        # Ensure one draft per shirt
+        shirt_id = request.data.get('shirt')
+        if not shirt_id:
+             return Response({"shirt": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+             
+        if ShirtDraft.objects.filter(shirt_id=shirt_id).exists():
+             return Response({"message": "Draft already exists for this shirt."}, status=status.HTTP_400_BAD_REQUEST)
+             
+        return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
 
 
 # Report Generation APIs

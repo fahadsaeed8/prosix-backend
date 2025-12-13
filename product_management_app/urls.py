@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import FavoriteShirtAPIView, ShirtListCreateView, ShirtRetrieveUpdateDestroyView, ShirtCategoryListCreateView, ShirtCategoryRetrieveUpdateDestroyView, ShirtSubCategoryListCreateView, ShirtSubCategoryRetrieveUpdateDestroyView, UserShirtCreateAPIView, UserShirtListAPIView, CustomizerListCreateView, CustomizerRetrieveUpdateDestroyView, CustomizerStatisticsAPIView, PatternListCreateView, PatternRetrieveUpdateDestroyView, ColorListCreateView, ColorRetrieveUpdateDestroyView, FontListCreateView, FontRetrieveUpdateDestroyView, OrderListCreateView, OrderRetrieveUpdateDestroyView, InvoiceListCreateView, InvoiceRetrieveDestroyView, RevenueReportListCreateView, RevenueReportRetrieveUpdateDestroyView, ProductSalesReportListCreateView, ProductSalesReportRetrieveUpdateDestroyView, CustomerAnalysisReportListCreateView, CustomerAnalysisReportRetrieveUpdateDestroyView, GrowthTrendReportListCreateView, GrowthTrendReportRetrieveUpdateDestroyView, GenerateRevenueReportAPIView, GenerateProductSalesReportAPIView, GenerateCustomerAnalysisReportAPIView, GenerateGrowthTrendReportAPIView
+from .views import FavoriteShirtAPIView, ShirtListCreateView, ShirtRetrieveUpdateDestroyView, ShirtCategoryListCreateView, ShirtCategoryRetrieveUpdateDestroyView, ShirtSubCategoryListCreateView, ShirtSubCategoryRetrieveUpdateDestroyView, UserShirtCreateAPIView, UserShirtListAPIView, CustomizerListCreateView, CustomizerRetrieveUpdateDestroyView, CustomizerStatisticsAPIView, PatternListCreateView, PatternRetrieveUpdateDestroyView, ColorListCreateView, ColorRetrieveUpdateDestroyView, FontListCreateView, FontRetrieveUpdateDestroyView, OrderListCreateView, OrderRetrieveUpdateDestroyView, InvoiceListCreateView, InvoiceRetrieveDestroyView, RevenueReportListCreateView, RevenueReportRetrieveUpdateDestroyView, ProductSalesReportListCreateView, ProductSalesReportRetrieveUpdateDestroyView, CustomerAnalysisReportListCreateView, CustomerAnalysisReportRetrieveUpdateDestroyView, GrowthTrendReportListCreateView, GrowthTrendReportRetrieveUpdateDestroyView, GenerateRevenueReportAPIView, GenerateProductSalesReportAPIView, GenerateCustomerAnalysisReportAPIView, GenerateGrowthTrendReportAPIView, ShirtDraftViewSet
 
 urlpatterns = [
     
@@ -49,5 +49,8 @@ urlpatterns = [
     path('reports/growth-trend/', GrowthTrendReportListCreateView.as_view()),
     path('reports/growth-trend/<int:id>/', GrowthTrendReportRetrieveUpdateDestroyView.as_view()),
     path('reports/growth-trend/generate/', GenerateGrowthTrendReportAPIView.as_view()),
+
+    path('drafts/', ShirtDraftViewSet.as_view({'post': 'create'})),
+    path('drafts/<int:shirt>/', ShirtDraftViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
 
 ]
