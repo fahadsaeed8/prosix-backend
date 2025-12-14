@@ -130,11 +130,20 @@ class ShirtSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create shirt and associated images"""
+        # Try to pull images from the form data first
         other_images_data = validated_data.pop('other_images_upload', None)
+        request = self.context.get('request')
+        images_from_files = []
+        if request and hasattr(request, 'FILES'):
+            # Allow multiple files under the same field name
+            images_from_files = request.FILES.getlist('other_images_upload')
+
         shirt = Shirt.objects.create(**validated_data)
-        
-        # Create ShirtImage instances if provided
-        if other_images_data:
+        # Prefer files from request if provided; fall back to serialized data
+        if images_from_files:
+            for image in images_from_files:
+                ShirtImage.objects.create(shirt=shirt, image=image)
+        elif other_images_data:
             for image in other_images_data:
                 ShirtImage.objects.create(shirt=shirt, image=image)
         
@@ -143,6 +152,10 @@ class ShirtSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Update shirt and optionally update images"""
         other_images_data = validated_data.pop('other_images_upload', None)
+        request = self.context.get('request')
+        images_from_files = []
+        if request and hasattr(request, 'FILES'):
+            images_from_files = request.FILES.getlist('other_images_upload')
         
         # Update shirt fields
         for attr, value in validated_data.items():
@@ -150,11 +163,12 @@ class ShirtSerializer(serializers.ModelSerializer):
         instance.save()
         
         # If new images provided, replace old ones
-        if other_images_data is not None:
+        images_to_use = images_from_files if images_from_files else other_images_data
+        if images_to_use is not None:
             # Delete existing images
             instance.other_images.all().delete()
             # Create new images
-            for image in other_images_data:
+            for image in images_to_use:
                 ShirtImage.objects.create(shirt=instance, image=image)
         
         return instance
