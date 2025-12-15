@@ -955,15 +955,20 @@ class ShirtDraftViewSet(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     lookup_field = 'shirt'
 
     def create(self, request, *args, **kwargs):
-        # Ensure one draft per shirt
+        # If a draft already exists for this shirt, update it instead of error
         shirt_id = request.data.get('shirt')
         if not shirt_id:
-             return Response({"shirt": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
-             
-        if ShirtDraft.objects.filter(shirt_id=shirt_id).exists():
-             return Response({"message": "Draft already exists for this shirt."}, status=status.HTTP_400_BAD_REQUEST)
-             
-        return super().create(request, *args, **kwargs)
+            return Response({"shirt": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            existing_draft = ShirtDraft.objects.get(shirt_id=shirt_id)
+        except ShirtDraft.DoesNotExist:
+            # No existing draft; create a new one
+            return super().create(request, *args, **kwargs)
+        # Existing draft found; perform an update with the incoming data
+        serializer = self.get_serializer(existing_draft, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
