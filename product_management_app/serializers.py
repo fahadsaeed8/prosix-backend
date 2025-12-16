@@ -320,6 +320,15 @@ class PatternSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
+    def validate_pattern_image(self, value):
+        # Optional: enforce a reasonable set of extensions if provided
+        if value:
+            import os
+            ext = os.path.splitext(value.name)[1].lower()
+            allowed = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff']
+            if ext not in allowed:
+                raise serializers.ValidationError(f"Unsupported file extension: {ext}. Allowed: {', '.join(allowed)}")
+        return value
     
 
 
