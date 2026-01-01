@@ -32,6 +32,34 @@ class ShirtImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
+class SubCategoryInputField(serializers.Field):
+    """
+    Accepts sub_category as either an integer id or a string name.
+    If a string is provided, ensures a ShirtSubCategory with that name exists
+    and returns its id for the related field.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, int):
+            return data
+        if isinstance(data, str):
+            sub, created = ShirtSubCategory.objects.get_or_create(name=data)
+            return sub.id
+        raise serializers.ValidationError("Sub category must be an integer id or a string name.")
+
+class SubCategoryInputField(serializers.Field):
+    """
+    Accepts sub_category as either an integer id or a string name.
+    If a string is provided, ensures a ShirtSubCategory with that name exists
+    and returns its id for the related field.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, int):
+            return data
+        if isinstance(data, str):
+            sub, created = ShirtSubCategory.objects.get_or_create(name=data)
+            return sub.id
+        raise serializers.ValidationError("Sub category must be an integer id or a string name.")
+
 
 class ShirtDraftSerializer(serializers.ModelSerializer):
     """

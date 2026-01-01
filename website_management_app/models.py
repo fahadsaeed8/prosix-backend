@@ -116,6 +116,8 @@ class Category(models.Model):
     icon = models.CharField(max_length=10, help_text="Emoji icon")
     description = models.TextField(blank=True, null=True)
     color = models.CharField(max_length=7, help_text="Hex color code", default="#000000")
+    show_in = models.CharField(max_length=50, blank=True, null=True, help_text="Section to show this category in")
+    password = models.CharField(max_length=128, blank=True, null=True, help_text="Optional password to access this category")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

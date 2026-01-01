@@ -1,5 +1,6 @@
 from rest_framework import generics, viewsets
 from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
+from website_management_app.models import Category
 from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer, ShirtDraftSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -31,6 +32,21 @@ class ShirtSubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAP
 class ShirtListCreateView(generics.ListCreateAPIView):
     queryset = Shirt.objects.all()
     serializer_class = ShirtSerializer
+    def create(self, request, *args, **kwargs):
+        # Enforce optional category password protection
+        category_id = request.data.get('category')
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+            except Category.DoesNotExist:
+                return Response({"category": ["Invalid category."]}, status=status.HTTP_400_BAD_REQUEST)
+            if category.password:
+                provided = request.data.get('category_password')
+                if not provided:
+                    provided = request.headers.get('X-Category-Password')
+                if provided != category.password:
+                    return Response({"category_password": ["Invalid or missing category password."]}, status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
 
 class ShirtRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Shirt.objects.all()

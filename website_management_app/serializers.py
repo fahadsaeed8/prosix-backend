@@ -188,10 +188,15 @@ class CategorySerializer(serializers.ModelSerializer):
             'icon',
             'description',
             'color',
+            'show_in',
+            'password',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
+    extra_kwargs = {
+        'password': {'write_only': True},
+    }
     
     def validate_color(self, value):
         """Validate hex color code format"""
