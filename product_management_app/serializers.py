@@ -32,56 +32,7 @@ class ShirtImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
-class SubCategoryInputField(serializers.Field):
-    """
-    Accepts sub_category as either an integer id or a string name.
-    If a string is provided, ensures a ShirtSubCategory with that name exists
-    and returns its id for the related field.
-    """
-    def to_internal_value(self, data):
-        if isinstance(data, int):
-            return data
-        if isinstance(data, str):
-            sub, created = ShirtSubCategory.objects.get_or_create(name=data)
-            return sub.id
-        raise serializers.ValidationError("Sub category must be an integer id or a string name.")
-
-class CategoryInputField(serializers.Field):
-    """
-    Accepts category as either an integer id or a string name.
-    If a string is provided, resolves to an existing Category by name.
-    If not found, raises a validation error (no auto-creation here).
-    """
-    def to_internal_value(self, data):
-        # Only allow numeric ids (int or numeric string)
-        if isinstance(data, int):
-            try:
-                Category.objects.get(id=data)
-                return data
-            except Category.DoesNotExist:
-                raise serializers.ValidationError("Invalid category id")
-        if isinstance(data, str) and data.isdigit():
-            cid = int(data)
-            try:
-                Category.objects.get(id=cid)
-                return cid
-            except Category.DoesNotExist:
-                raise serializers.ValidationError("Invalid category id")
-        # Do not support category_name lookup to keep API strictly ID-driven
-        raise serializers.ValidationError("Category must be a valid integer id.")
-class SubCategoryInputField(serializers.Field):
-    """
-    Accepts sub_category as either an integer id or a string name.
-    If a string is provided, ensures a ShirtSubCategory with that name exists
-    and returns its id for the related field.
-    """
-    def to_internal_value(self, data):
-        if isinstance(data, int):
-            return data
-        if isinstance(data, str):
-            sub, created = ShirtSubCategory.objects.get_or_create(name=data)
-            return sub.id
-        raise serializers.ValidationError("Sub category must be an integer id or a string name.")
+# SubCategoryInputField removed; revert to default handling of sub_category
 
 
 class ShirtDraftSerializer(serializers.ModelSerializer):
@@ -116,7 +67,6 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
 
 
 class ShirtSerializer(serializers.ModelSerializer):
-    category = CategoryInputField()
     category_detail = CategorySerializer(source='category', read_only=True)
     sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)

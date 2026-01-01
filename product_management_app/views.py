@@ -33,6 +33,33 @@ class ShirtListCreateView(generics.ListCreateAPIView):
     queryset = Shirt.objects.all()
     serializer_class = ShirtSerializer
     def create(self, request, *args, **kwargs):
+        # Normalize potential numeric strings for category (e.g., "1" or "\"1\"")
+        if isinstance(request.data, dict) and 'category' in request.data:
+            cat_val = request.data.get('category')
+            if isinstance(cat_val, str):
+                # strip surrounding quotes if present
+                raw = cat_val.strip().strip('"').strip("'")
+                if raw.isdigit():
+                    try:
+                        request.data._mutable = True  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
+                    request.data['category'] = int(raw)
+                elif cat_val.strip().isdigit():  # fallback for unquoted digits
+                    try:
+                        request.data._mutable = True  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
+                    request.data['category'] = int(cat_val.strip())
+            elif isinstance(cat_val, int):
+                pass
+                try:
+                    request.data._mutable = True  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+                request.data['category'] = int(cat_val.strip())
+        return super().create(request, *args, **kwargs)
+    def create(self, request, *args, **kwargs):
         # Enforce optional category password protection
         category_id = request.data.get('category')
         if category_id:
