@@ -53,26 +53,22 @@ class CategoryInputField(serializers.Field):
     If not found, raises a validation error (no auto-creation here).
     """
     def to_internal_value(self, data):
+        # Only allow numeric ids (int or numeric string)
         if isinstance(data, int):
             try:
                 Category.objects.get(id=data)
                 return data
             except Category.DoesNotExist:
                 raise serializers.ValidationError("Invalid category id")
-        if isinstance(data, str):
-            if data.isdigit():
-                cid = int(data)
-                try:
-                    Category.objects.get(id=cid)
-                    return cid
-                except Category.DoesNotExist:
-                    raise serializers.ValidationError("Invalid category id")
+        if isinstance(data, str) and data.isdigit():
+            cid = int(data)
             try:
-                category = Category.objects.get(category_name=data)
-                return category.id
+                Category.objects.get(id=cid)
+                return cid
             except Category.DoesNotExist:
-                raise serializers.ValidationError("Category not found")
-        raise serializers.ValidationError("Category must be an integer id or a string name.")
+                raise serializers.ValidationError("Invalid category id")
+        # Do not support category_name lookup to keep API strictly ID-driven
+        raise serializers.ValidationError("Category must be a valid integer id.")
 class SubCategoryInputField(serializers.Field):
     """
     Accepts sub_category as either an integer id or a string name.
