@@ -143,7 +143,7 @@ class Customizer(models.Model):
     model_type = models.CharField(max_length=50, choices=MODEL_TYPE_CHOICES)
     sport = models.CharField(max_length=50, choices=SPORT_CHOICES)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    sub_category = models.CharField(max_length=255, blank=True, null=True, help_text="Optional sub-category for customizer")
+    sub_category = models.JSONField(blank=True, null=True, default=list, help_text="Optional list of sub-categories for customizer")
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True, help_text="Whether the model is active")
     views = models.IntegerField(default=0, help_text="Total number of views")

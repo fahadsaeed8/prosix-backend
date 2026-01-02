@@ -45,6 +45,16 @@ class SubCategoryInputField(serializers.Field):
             raise serializers.ValidationError("All sub categories must be strings.")
         # Backward-compat: allow a single string by wrapping it in a list
         if isinstance(data, str):
+            # If the string looks like a JSON-encoded list, try to parse it
+            try:
+                import json
+                parsed = json.loads(data)
+                if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
+                    return parsed
+                if isinstance(parsed, str):
+                    return [parsed]
+            except Exception:
+                pass
             return [data]
         raise serializers.ValidationError("Sub category must be a list of strings.")
 
