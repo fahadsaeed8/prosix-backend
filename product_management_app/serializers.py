@@ -34,22 +34,35 @@ class ShirtImageSerializer(serializers.ModelSerializer):
     
 class SubCategoryInputField(serializers.Field):
     """
-    Accepts sub_category as a string (name). No auto-creation; store as provided.
+    Accepts sub_category as an array of strings. No auto-creation; store as provided.
+    This extends the previous single-string input to support multiple sub-categories.
     """
     def to_internal_value(self, data):
+        # Accept a list of strings
+        if isinstance(data, list):
+            if all(isinstance(item, str) for item in data):
+                return data
+            raise serializers.ValidationError("All sub categories must be strings.")
+        # Backward-compat: allow a single string by wrapping it in a list
         if isinstance(data, str):
-            return data
-        raise serializers.ValidationError("Sub category must be a string name.")
+            return [data]
+        raise serializers.ValidationError("Sub category must be a list of strings.")
+
     def to_representation(self, value):
         if value is None:
             return None
-        if isinstance(value, str):
+        # If it's already a list of strings, return as-is
+        if isinstance(value, list):
             return value
+        # If it's a single string, normalize to a list
+        if isinstance(value, str):
+            return [value]
+        # If it's a related object, try to extract a sensible representation
         if hasattr(value, 'name'):
-            return value.name
+            return [value.name]
         if hasattr(value, 'id'):
-            return value.id
-        return value
+            return [value.id]
+        return [value]
 
 class CategoryInputField(serializers.Field):
     """
