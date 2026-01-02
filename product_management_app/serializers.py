@@ -1,4 +1,15 @@
 from rest_framework import serializers
+from website_management_app.models import Category
+from .models import SubCategory
+
+class SubCategorySerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = SubCategory
+        fields = ['id', 'category', 'name', 'show_in', 'password', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'created_at', 'updated_at')
 from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
 from website_management_app.models import Category
 from django.conf import settings
@@ -34,42 +45,55 @@ class ShirtImageSerializer(serializers.ModelSerializer):
     
 class SubCategoryInputField(serializers.Field):
     """
-    Accepts sub_category as an array of strings. No auto-creation; store as provided.
-    This extends the previous single-string input to support multiple sub-categories.
+    Accepts sub_category as a list of SubCategory IDs (integers).
+    Validates IDs exist; stores as list of ints.
     """
     def to_internal_value(self, data):
-        # Accept a list of strings
+        # Normalize to a list of integers
         if isinstance(data, list):
-            if all(isinstance(item, str) for item in data):
-                return data
-            raise serializers.ValidationError("All sub categories must be strings.")
-        # Backward-compat: allow a single string by wrapping it in a list
+            ids = []
+            for item in data:
+                if isinstance(item, int):
+                    ids.append(item)
+                elif isinstance(item, str) and item.isdigit():
+                    ids.append(int(item))
+                else:
+                    raise serializers.ValidationError("All sub_category IDs must be integers.")
+            # Validate existence
+            if ids:
+                existing = set(SubCategory.objects.filter(id__in=ids).values_list('id', flat=True))
+                if len(existing) != len(ids):
+                    raise serializers.ValidationError("One or more sub_category IDs are invalid.")
+            return ids
+        # Backward-compat: single ID
+        if isinstance(data, int):
+            cid = data
+            if not SubCategory.objects.filter(id=cid).exists():
+                raise serializers.ValidationError("Invalid sub_category id.")
+            return [cid]
         if isinstance(data, str):
-            # If the string looks like a JSON-encoded list, try to parse it
+            # Try JSON-encoded list
             try:
                 import json
                 parsed = json.loads(data)
-                if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
-                    return parsed
-                if isinstance(parsed, str):
+                if isinstance(parsed, list):
+                    return self.to_internal_value(parsed)
+                if isinstance(parsed, int):
                     return [parsed]
             except Exception:
                 pass
-            return [data]
-        raise serializers.ValidationError("Sub category must be a list of strings.")
+            if data.isdigit():
+                cid = int(data)
+                if not SubCategory.objects.filter(id=cid).exists():
+                    raise serializers.ValidationError("Invalid sub_category id.")
+                return [cid]
+        raise serializers.ValidationError("Sub category must be a list of IDs.")
 
     def to_representation(self, value):
         if value is None:
             return None
-        # If it's already a list of strings, return as-is
         if isinstance(value, list):
             return value
-        # If it's a single string, normalize to a list
-        if isinstance(value, str):
-            return [value]
-        # If it's a related object, try to extract a sensible representation
-        if hasattr(value, 'name'):
-            return [value.name]
         if hasattr(value, 'id'):
             return [value.id]
         return [value]

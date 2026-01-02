@@ -1,7 +1,7 @@
 from rest_framework import generics, viewsets
-from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
+from .models import Shirt, ShirtCategory, ShirtSubCategory, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft, SubCategory
 from website_management_app.models import Category
-from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer, ShirtDraftSerializer
+from .serializers import ShirtListSerializer, ShirtSerializer, ShirtCategorySerializer, ShirtSubCategorySerializer, UserShirtSerializer, FavoriteShirtSerializer, CustomizerSerializer, PatternSerializer, ColorSerializer, FontSerializer, OrderSerializer, InvoiceSerializer, RevenueReportSerializer, ProductSalesReportSerializer, CustomerAnalysisReportSerializer, GrowthTrendReportSerializer, ShirtDraftSerializer, SubCategorySerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -56,19 +56,7 @@ class ShirtListCreateView(generics.ListCreateAPIView):
                 except Exception:
                     pass
                 request.data['category'] = int(cat_val)
-        # Enforce optional category password protection
-        category_id = request.data.get('category')
-        if category_id:
-            try:
-                category = Category.objects.get(id=category_id)
-            except Category.DoesNotExist:
-                return Response({"category": ["Invalid category."]}, status=status.HTTP_400_BAD_REQUEST)
-            if category.password:
-                provided = request.data.get('category_password')
-                if not provided:
-                    provided = request.headers.get('X-Category-Password')
-                if provided != category.password:
-                    return Response({"category_password": ["Invalid or missing category password."]}, status=status.HTTP_403_FORBIDDEN)
+        # Password protection for categories has been removed; proceed with creation
         return super().create(request, *args, **kwargs)
 
 class ShirtRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -238,6 +226,16 @@ class CustomizerListCreateView(generics.ListCreateAPIView):
             }
         }, status=status.HTTP_201_CREATED)
 
+class CustomizerByCategoryListView(generics.ListAPIView):
+    """List Customizer models filtered by Category ID (as created by /customizer)"""
+    serializer_class = CustomizerSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        category_id = self.kwargs.get('category_id')
+        if not category_id:
+            return Customizer.objects.none()
+        return Customizer.objects.filter(category_id=category_id)
 
 class CustomizerRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update or delete a customizer by ID"""
@@ -1012,6 +1010,18 @@ class ShirtDraftViewSet(generics.ListCreateAPIView, generics.RetrieveUpdateDestr
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
 
+class SubCategoryListCreateView(generics.ListCreateAPIView):
+    """List all subcategories or create a new subcategory"""
+    queryset = SubCategory.objects.all().order_by('-created_at')
+    serializer_class = SubCategorySerializer
+    permission_classes = [IsAuthenticated]
+
+class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a subcategory by ID"""
+    queryset = SubCategory.objects.all()
+    serializer_class = SubCategorySerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
 
 
 # Report Generation APIs

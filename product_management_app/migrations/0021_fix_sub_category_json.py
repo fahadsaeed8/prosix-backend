@@ -32,7 +32,7 @@ def fix_sub_category_json(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('product_management_app', '0020_merge_20260102_1442'),
+        ('product_management_app', '0018_alter_customizer_sub_category'),
     ]
 
     operations = [

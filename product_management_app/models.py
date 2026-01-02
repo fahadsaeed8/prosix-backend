@@ -445,3 +445,14 @@ class GrowthTrendReport(models.Model):
     
     def __str__(self):
         return f"Growth Trend Report - {self.report_date}"
+
+class SubCategory(models.Model):
+    category = models.ForeignKey('website_management_app.Category', on_delete=models.CASCADE, related_name='subcategories')
+    name = models.CharField(max_length=255)
+    show_in = models.CharField(max_length=255, blank=True, null=True, help_text="Where to show the sub-category")
+    password = models.CharField(max_length=128, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.category}"
