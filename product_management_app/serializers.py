@@ -32,7 +32,35 @@ class ShirtImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
-# SubCategoryInputField removed; revert to default handling of sub_category
+class SubCategoryInputField(serializers.Field):
+    """
+    Accepts sub_category as a string (name). No auto-creation; store as provided.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            return data
+        raise serializers.ValidationError("Sub category must be a string name.")
+
+class CategoryInputField(serializers.Field):
+    """
+    Accepts category as either an integer id or a numeric string.
+    Only ID-based inputs are supported here.
+    """
+    def to_internal_value(self, data):
+        if isinstance(data, int):
+            try:
+                Category.objects.get(id=data)
+                return data
+            except Category.DoesNotExist:
+                raise serializers.ValidationError("Invalid category id")
+        if isinstance(data, str) and data.isdigit():
+            cid = int(data)
+            try:
+                Category.objects.get(id=cid)
+                return cid
+            except Category.DoesNotExist:
+                raise serializers.ValidationError("Invalid category id")
+        raise serializers.ValidationError("Category must be a valid integer id.")
 
 
 class ShirtDraftSerializer(serializers.ModelSerializer):
@@ -67,6 +95,7 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
 
 
 class ShirtSerializer(serializers.ModelSerializer):
+    category = CategoryInputField()
     category_detail = CategorySerializer(source='category', read_only=True)
     sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
@@ -274,6 +303,9 @@ class FavoriteShirtSerializer(serializers.ModelSerializer):
 
 class CustomizerSerializer(serializers.ModelSerializer):
     """Serializer for Customizer"""
+    category = CategoryInputField()
+    sub_category = SubCategoryInputField()
+    category_password = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = Customizer
@@ -302,6 +334,32 @@ class CustomizerSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def create(self, validated_data):
+        # Handle category/password logic: validate existing and optionally set password
+        category_id = validated_data.get('category')
+        if category_id:
+            from website_management_app.models import Category as CategoryModel
+            try:
+                category = CategoryModel.objects.get(id=category_id)
+            except CategoryModel.DoesNotExist:
+                raise serializers.ValidationError({"category": ["Invalid category."]})
+            # Resolve provided password from payload or header
+            category_password = validated_data.pop('category_password', None)
+            request = self.context.get('request')
+            if not category_password and request:
+                category_password = request.headers.get('X-Category-Password')
+            if category.password:
+                if not category_password:
+                    raise serializers.ValidationError({"category_password": ["Invalid or missing category password."]})
+                if category_password != category.password:
+                    raise serializers.ValidationError({"category_password": ["Invalid category password."]})
+            else:
+                if category_password:
+                    # Set password on category if not already set
+                    category.password = category_password
+                    category.save()
+        return super().create(validated_data)
     
 
 

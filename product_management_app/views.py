@@ -37,7 +37,6 @@ class ShirtListCreateView(generics.ListCreateAPIView):
         if isinstance(request.data, dict) and 'category' in request.data:
             cat_val = request.data.get('category')
             if isinstance(cat_val, str):
-                # strip surrounding quotes if present
                 raw = cat_val.strip().strip('"').strip("'")
                 if raw.isdigit():
                     try:
@@ -45,21 +44,18 @@ class ShirtListCreateView(generics.ListCreateAPIView):
                     except Exception:
                         pass
                     request.data['category'] = int(raw)
-                elif cat_val.strip().isdigit():  # fallback for unquoted digits
+                elif cat_val.strip().isdigit():
                     try:
                         request.data._mutable = True  # type: ignore[attr-defined]
                     except Exception:
                         pass
                     request.data['category'] = int(cat_val.strip())
             elif isinstance(cat_val, int):
-                pass
                 try:
                     request.data._mutable = True  # type: ignore[attr-defined]
                 except Exception:
                     pass
-                request.data['category'] = int(cat_val.strip())
-        return super().create(request, *args, **kwargs)
-    def create(self, request, *args, **kwargs):
+                request.data['category'] = int(cat_val)
         # Enforce optional category password protection
         category_id = request.data.get('category')
         if category_id:
@@ -231,6 +227,19 @@ class CustomizerListCreateView(generics.ListCreateAPIView):
         }, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
+        # Enforce optional category password protection similar to shirts
+        category_id = request.data.get('category')
+        if category_id:
+            try:
+                category = Category.objects.get(id=category_id)
+            except Category.DoesNotExist:
+                return Response({"category": ["Invalid category."]}, status=status.HTTP_400_BAD_REQUEST)
+            if category.password:
+                provided = request.data.get('category_password')
+                if not provided:
+                    provided = request.headers.get('X-Category-Password')
+                if provided != category.password:
+                    return Response({"category_password": ["Invalid or missing category password."]}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
