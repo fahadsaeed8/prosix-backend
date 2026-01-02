@@ -10,6 +10,15 @@ class SubCategorySerializer(serializers.ModelSerializer):
         model = SubCategory
         fields = ['id', 'category', 'name', 'show_in', 'password', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def to_representation(self, instance):
+        """Override to return full Category object instead of just ID"""
+        representation = super().to_representation(instance)
+        # Replace category ID with full Category object
+        if instance.category:
+            from website_management_app.serializers import CategorySerializer as FullCategorySerializer
+            representation['category'] = FullCategorySerializer(instance.category).data
+        return representation
 from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
 from website_management_app.models import Category
 from django.conf import settings
@@ -90,18 +99,39 @@ class SubCategoryInputField(serializers.Field):
         raise serializers.ValidationError("Sub category must be a list of IDs.")
 
     def to_representation(self, value):
+        """Return full SubCategory objects instead of just IDs"""
         if value is None:
-            return None
+            return []
+        
+        # Get list of subcategory IDs
+        subcategory_ids = []
         if isinstance(value, list):
-            return value
-        if hasattr(value, 'id'):
-            return [value.id]
-        return [value]
+            subcategory_ids = [int(item) if isinstance(item, str) and item.isdigit() else item for item in value if isinstance(item, (int, str)) and (isinstance(item, int) or item.isdigit())]
+        elif isinstance(value, (int, str)):
+            if isinstance(value, str) and value.isdigit():
+                subcategory_ids = [int(value)]
+            elif isinstance(value, int):
+                subcategory_ids = [value]
+        elif hasattr(value, 'id'):
+            subcategory_ids = [value.id]
+        else:
+            return []
+        
+        if not subcategory_ids:
+            return []
+        
+        # Fetch and serialize all SubCategory objects
+        try:
+            subcategories = SubCategory.objects.filter(id__in=subcategory_ids)
+            return SubCategorySerializer(subcategories, many=True).data
+        except Exception:
+            return []
 
 class CategoryInputField(serializers.Field):
     """
     Accepts category as either an integer id or a numeric string.
     Only ID-based inputs are supported here.
+    Returns full Category object in representation.
     """
     def to_internal_value(self, data):
         if isinstance(data, int):
@@ -118,13 +148,31 @@ class CategoryInputField(serializers.Field):
             except Category.DoesNotExist:
                 raise serializers.ValidationError("Invalid category id")
         raise serializers.ValidationError("Category must be a valid integer id.")
+    
     def to_representation(self, value):
-        # Normalize output to an integer id for the category field
+        """Return full Category object instead of just ID"""
         if value is None:
             return None
-        if hasattr(value, 'id'):
-            return value.id
-        return value
+        
+        # Get category ID - value might be int, string, or Category object
+        category_id = None
+        if isinstance(value, int):
+            category_id = value
+        elif isinstance(value, str) and value.isdigit():
+            category_id = int(value)
+        elif hasattr(value, 'id'):
+            category_id = value.id
+        else:
+            return None
+        
+        # Fetch and serialize the Category object
+        try:
+            category = Category.objects.get(id=category_id)
+            # Use the CategorySerializer from website_management_app for full fields
+            from website_management_app.serializers import CategorySerializer as FullCategorySerializer
+            return FullCategorySerializer(category).data
+        except Category.DoesNotExist:
+            return None
 
 
 class ShirtDraftSerializer(serializers.ModelSerializer):
