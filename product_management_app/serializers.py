@@ -40,6 +40,16 @@ class SubCategoryInputField(serializers.Field):
         if isinstance(data, str):
             return data
         raise serializers.ValidationError("Sub category must be a string name.")
+    def to_representation(self, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        if hasattr(value, 'name'):
+            return value.name
+        if hasattr(value, 'id'):
+            return value.id
+        return value
 
 class CategoryInputField(serializers.Field):
     """
