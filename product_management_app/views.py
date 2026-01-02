@@ -232,25 +232,13 @@ class CustomizerByCategoryListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        category_identifier = self.kwargs.get('category_id') or self.kwargs.get('category_code')
-        if category_identifier is None:
+        category_id = self.kwargs.get('category_id')
+        if category_id is None:
             return Customizer.objects.none()
-        # Import locally to avoid circular imports in some setups
-        from django.db import models
-        category_field = Customizer._meta.get_field('category')
-        # If the category is a ForeignKey, filter by ID
-        if isinstance(category_field, models.ForeignKey):
-            if isinstance(category_identifier, int) or (isinstance(category_identifier, str) and category_identifier.isdigit()):
-                return Customizer.objects.filter(category_id=int(category_identifier))
-            return Customizer.objects.none()
-        # If the category is a CharField (code), support ID-to-code mapping or direct code
-        if isinstance(category_identifier, int) or (isinstance(category_identifier, str) and category_identifier.isdigit()):
-            mapping = {1: 'jerseys', 2: 'shorts', 3: 'hoodies', 4: 'pants', 5: 'jacket', 6: 'accessories'}
-            code = mapping.get(int(category_identifier))
-            if code:
-                return Customizer.objects.filter(category=code)
-            return Customizer.objects.none()
-        return Customizer.objects.filter(category=category_identifier)
+        
+        # Convert to string since Customizer.category is a CharField storing the ID as string
+        category_id_str = str(category_id)
+        return Customizer.objects.filter(category=category_id_str)
 
 class CustomizerRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update or delete a customizer by ID"""
