@@ -61,6 +61,13 @@ class CategoryInputField(serializers.Field):
             except Category.DoesNotExist:
                 raise serializers.ValidationError("Invalid category id")
         raise serializers.ValidationError("Category must be a valid integer id.")
+    def to_representation(self, value):
+        # Normalize output to an integer id for the category field
+        if value is None:
+            return None
+        if hasattr(value, 'id'):
+            return value.id
+        return value
 
 
 class ShirtDraftSerializer(serializers.ModelSerializer):
