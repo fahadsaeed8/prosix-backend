@@ -227,19 +227,6 @@ class CustomizerListCreateView(generics.ListCreateAPIView):
         }, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
-        # Enforce optional category password protection similar to shirts
-        category_id = request.data.get('category')
-        if category_id:
-            try:
-                category = Category.objects.get(id=category_id)
-            except Category.DoesNotExist:
-                return Response({"category": ["Invalid category."]}, status=status.HTTP_400_BAD_REQUEST)
-            if category.password:
-                provided = request.data.get('category_password')
-                if not provided:
-                    provided = request.headers.get('X-Category-Password')
-                if provided != category.password:
-                    return Response({"category_password": ["Invalid or missing category password."]}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)

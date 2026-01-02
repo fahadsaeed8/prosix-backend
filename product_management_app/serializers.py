@@ -305,7 +305,6 @@ class CustomizerSerializer(serializers.ModelSerializer):
     """Serializer for Customizer"""
     category = CategoryInputField()
     sub_category = SubCategoryInputField()
-    category_password = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = Customizer
@@ -315,6 +314,7 @@ class CustomizerSerializer(serializers.ModelSerializer):
             'model_type',
             'sport',
             'category',
+            'sub_category',
             'description',
             'is_active',
             'views',
@@ -335,31 +335,7 @@ class CustomizerSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
 
-    def create(self, validated_data):
-        # Handle category/password logic: validate existing and optionally set password
-        category_id = validated_data.get('category')
-        if category_id:
-            from website_management_app.models import Category as CategoryModel
-            try:
-                category = CategoryModel.objects.get(id=category_id)
-            except CategoryModel.DoesNotExist:
-                raise serializers.ValidationError({"category": ["Invalid category."]})
-            # Resolve provided password from payload or header
-            category_password = validated_data.pop('category_password', None)
-            request = self.context.get('request')
-            if not category_password and request:
-                category_password = request.headers.get('X-Category-Password')
-            if category.password:
-                if not category_password:
-                    raise serializers.ValidationError({"category_password": ["Invalid or missing category password."]})
-                if category_password != category.password:
-                    raise serializers.ValidationError({"category_password": ["Invalid category password."]})
-            else:
-                if category_password:
-                    # Set password on category if not already set
-                    category.password = category_password
-                    category.save()
-        return super().create(validated_data)
+    # Password handling moved to Category API; no create override
     
 
 
