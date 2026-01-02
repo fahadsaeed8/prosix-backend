@@ -1027,6 +1027,64 @@ class SubCategoryRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView
     lookup_field = 'id'
 
 
+class SubCategoryPasswordVerifyView(APIView):
+    """Verify password for a subcategory"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, id, *args, **kwargs):
+        """
+        Verify password for a subcategory
+        Body: {"password": "your_password"}
+        """
+        try:
+            subcategory = SubCategory.objects.get(id=id)
+            password = request.data.get('password')
+            
+            if not password:
+                return Response({
+                    'success': False,
+                    'response': {
+                        'message': 'Password is required'
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if subcategory has a password set
+            if not subcategory.password:
+                return Response({
+                    'success': True,
+                    'response': {
+                        'message': 'Subcategory does not require a password',
+                        'is_valid': True
+                    }
+                }, status=status.HTTP_200_OK)
+            
+            # Verify password
+            is_valid = (subcategory.password == password)
+            
+            return Response({
+                'success': True,
+                'response': {
+                    'message': 'Password verified successfully' if is_valid else 'Invalid password',
+                    'is_valid': is_valid
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except SubCategory.DoesNotExist:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': 'Subcategory not found'
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'response': {
+                    'message': f'Error verifying password: {str(e)}'
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 # Report Generation APIs
 class GenerateRevenueReportAPIView(APIView):
     """Generate revenue report dynamically from Order and Invoice data"""
