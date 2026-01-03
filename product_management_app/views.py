@@ -227,7 +227,10 @@ class CustomizerListCreateView(generics.ListCreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class CustomizerByCategoryListView(generics.ListAPIView):
-    """List Customizer models filtered by Category ID (as created by /customizer)"""
+    """List Customizer models filtered by Category ID (as created by /customizer)
+    Optional query parameter: subcategory_id - filter by subcategory ID
+    Example: /api/customizers/category/17/?subcategory_id=5
+    """
     serializer_class = CustomizerSerializer
     permission_classes = [IsAuthenticated]
 
@@ -238,7 +241,22 @@ class CustomizerByCategoryListView(generics.ListAPIView):
         
         # Convert to string since Customizer.category is a CharField storing the ID as string
         category_id_str = str(category_id)
-        return Customizer.objects.filter(category=category_id_str)
+        queryset = Customizer.objects.filter(category=category_id_str)
+        
+        # Filter by subcategory_id if provided as query parameter
+        subcategory_id = self.request.query_params.get('subcategory_id')
+        if subcategory_id:
+            try:
+                subcategory_id_int = int(subcategory_id)
+                # sub_category is a JSONField storing a list of IDs (integers)
+                # Use __contains to check if the subcategory_id exists in the JSON array
+                # For JSONField, __contains checks if the value exists in the array
+                queryset = queryset.filter(sub_category__contains=subcategory_id_int)
+            except (ValueError, TypeError):
+                # If subcategory_id is not a valid integer, return empty queryset
+                return Customizer.objects.none()
+        
+        return queryset
 
 class CustomizerRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update or delete a customizer by ID"""
