@@ -52,7 +52,7 @@ urlpatterns = [
     path('reports/growth-trend/generate/', GenerateGrowthTrendReportAPIView.as_view()),
 
     path('drafts/', ShirtDraftViewSet.as_view({'post': 'create'})),
-    path('drafts/<int:shirt>/', ShirtDraftViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
+    path('drafts/<int:customizer>/', ShirtDraftViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
     path('subcategories/', SubCategoryListCreateView.as_view()),
     path('subcategories/<int:id>/', SubCategoryRetrieveUpdateDestroyView.as_view()),
     path('subcategories/<int:id>/verify-password/', SubCategoryPasswordVerifyView.as_view()),

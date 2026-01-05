@@ -1006,27 +1006,27 @@ class GrowthTrendReportRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyA
 class ShirtDraftViewSet(generics.ListCreateAPIView, generics.RetrieveUpdateDestroyAPIView, viewsets.GenericViewSet):
     """
     ViewSet for ShirtDraft.
-    Lookup by shirt_id instead of draft id.
+    Lookup by customizer_id instead of draft id.
     """
     queryset = ShirtDraft.objects.all()
     serializer_class = ShirtDraftSerializer
-    lookup_field = 'shirt'
+    lookup_field = 'customizer'
 
     def create(self, request, *args, **kwargs):
-        # If a draft already exists for this shirt, update it instead of error
-        shirt_id = request.data.get('shirt')
-        if not shirt_id:
-            return Response({"shirt": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        # If a draft already exists for this customizer, update it instead of error
+        customizer_id = request.data.get('customizer')
+        if not customizer_id:
+             return Response({"customizer": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            existing_draft = ShirtDraft.objects.get(shirt_id=shirt_id)
+            existing_draft = ShirtDraft.objects.get(customizer_id=customizer_id)
+            # Existing draft found; perform an update with the incoming data
+            serializer = self.get_serializer(existing_draft, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ShirtDraft.DoesNotExist:
             # No existing draft; create a new one
             return super().create(request, *args, **kwargs)
-        # Existing draft found; perform an update with the incoming data
-        serializer = self.get_serializer(existing_draft, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)

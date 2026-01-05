@@ -71,19 +71,19 @@ class ShirtImage(models.Model):
 
 
 class ShirtDraft(models.Model):
-    """Draft configuration for a shirt (svg part colors stored as flat map)."""
+    """Draft configuration for a customizer (svg part colors stored as flat map)."""
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('completed', 'Completed'),
     ]
-    shirt = models.OneToOneField(Shirt, related_name='draft', on_delete=models.CASCADE)
+    customizer = models.OneToOneField('Customizer', related_name='draft', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     svg_part_colors = models.JSONField(default=dict, blank=True, help_text="Flat map of svg part colors, keys like 'front_0'")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"Draft for {self.shirt.name} - {self.get_status_display()}"
+        return f"Draft for {self.customizer.model_name} - {self.get_status_display()}"
 
 class UserShirt(models.Model):
     user = models.ForeignKey(User, related_name='usershirts_user', on_delete=models.CASCADE)

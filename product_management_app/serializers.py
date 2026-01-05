@@ -186,7 +186,7 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
         model = ShirtDraft
         fields = [
             'id',
-            'shirt',
+            'customizer',
             'status',
             'svgPartColors',
             'created_at',
