@@ -1227,7 +1227,7 @@ class GenerateProductSalesReportAPIView(APIView):
             # Determine top product
             if top_shirt and top_customizer:
                 if top_shirt.user_count >= top_customizer.user_count:
-                    top_product_name = top_shirt.name
+                    top_product_name = top_shirt.title
                     top_product_units_sold = top_shirt.user_count
                     top_category = top_shirt.category.name if top_shirt.category else 'N/A'
                 else:

@@ -19,7 +19,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
             from website_management_app.serializers import CategorySerializer as FullCategorySerializer
             representation['category'] = FullCategorySerializer(instance.category).data
         return representation
-from .models import Shirt, ShirtCategory, ShirtSubCategory, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
+from .models import Shirt, ShirtCategory, ShirtSubCategory, MainShirtImage, ShirtImage, UserShirt, FavoriteShirt, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice, RevenueReport, ProductSalesReport, CustomerAnalysisReport, GrowthTrendReport, ShirtDraft
 from website_management_app.models import Category
 from django.conf import settings
 
@@ -43,6 +43,15 @@ class ShirtSubCategorySerializer(serializers.ModelSerializer):
         model = ShirtSubCategory
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+
+class MainShirtImageSerializer(serializers.ModelSerializer):
+    """Serializer for MainShirtImage (main images, max 6)"""
+    
+    class Meta:
+        model = MainShirtImage
+        fields = ['id', 'shirt', 'image', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
 
 class ShirtImageSerializer(serializers.ModelSerializer):
     """Serializer for ShirtImage (additional images)"""
@@ -208,44 +217,22 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
 
 class ShirtSerializer(serializers.ModelSerializer):
     category = CategoryInputField()
-    category_detail = CategorySerializer(source='category', read_only=True)
-    sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
+    main_images = MainShirtImageSerializer(many=True, read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
-    other_images_upload = serializers.ListField(
-        child=serializers.ImageField(),
-        write_only=True,
-        required=False,
-        min_length=1,
-        max_length=10,
-        help_text="Upload 1-10 additional images"
-    )
     
     class Meta:
         model = Shirt
         fields = [
             'id',
-            'name',
+            'title',
             'category',
-            'category_detail',
             'sub_category',
-            'sub_category_detail',
             'price',
             'sku',
-            'description',
-            'white_front',
-            'white_back',
-            'white_left',
-            'white_right',
-            'black_front',
-            'black_back',
-            'black_left',
-            'black_right',
-            'svg_front',
-            'svg_back',
-            'svg_left',
-            'svg_right',
+            'size',
+            'model',
+            'main_images',
             'other_images',
-            'other_images_upload',
             'created_at',
             'updated_at'
         ]
@@ -253,10 +240,6 @@ class ShirtSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'category': {'write_only': True},
             'sub_category': {'write_only': True},
-            'svg_front': {'required': False},
-            'svg_back': {'required': False},
-            'svg_left': {'required': False},
-            'svg_right': {'required': False},
         }
     
     def validate_price(self, value):
@@ -265,55 +248,16 @@ class ShirtSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Price must be greater than 0")
         return value
     
-    def validate_other_images_upload(self, value):
-        """Validate other images count (1-10)"""
-        if value and len(value) > 10:
-            raise serializers.ValidationError("Maximum 10 additional images allowed")
-        return value
-    
     def create(self, validated_data):
-        """Create shirt and associated images"""
-        # Try to pull images from the form data first
-        other_images_data = validated_data.pop('other_images_upload', None)
-        request = self.context.get('request')
-        images_from_files = []
-        if request and hasattr(request, 'FILES'):
-            # Allow multiple files under the same field name
-            images_from_files = request.FILES.getlist('other_images_upload')
-
+        """Create shirt"""
         shirt = Shirt.objects.create(**validated_data)
-        # Prefer files from request if provided; fall back to serialized data
-        if images_from_files:
-            for image in images_from_files:
-                ShirtImage.objects.create(shirt=shirt, image=image)
-        elif other_images_data:
-            for image in other_images_data:
-                ShirtImage.objects.create(shirt=shirt, image=image)
-        
         return shirt
     
     def update(self, instance, validated_data):
-        """Update shirt and optionally update images"""
-        other_images_data = validated_data.pop('other_images_upload', None)
-        request = self.context.get('request')
-        images_from_files = []
-        if request and hasattr(request, 'FILES'):
-            images_from_files = request.FILES.getlist('other_images_upload')
-        
-        # Update shirt fields
+        """Update shirt"""
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
-        # If new images provided, replace old ones
-        images_to_use = images_from_files if images_from_files else other_images_data
-        if images_to_use is not None:
-            # Delete existing images
-            instance.other_images.all().delete()
-            # Create new images
-            for image in images_to_use:
-                ShirtImage.objects.create(shirt=instance, image=image)
-        
         return instance
     
 
@@ -351,34 +295,21 @@ class UserShirtGETSerializer(serializers.ModelSerializer):
 class ShirtListSerializer(serializers.ModelSerializer):
     user_shirts = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
-    category_detail = CategorySerializer(source='category', read_only=True)
-    sub_category_detail = ShirtSubCategorySerializer(source='sub_category', read_only=True)
+    main_images = MainShirtImageSerializer(many=True, read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
     
     class Meta:
         model = Shirt
         fields = [
             'id',
-            'name',
+            'title',
             'category',
-            'category_detail',
             'sub_category',
-            'sub_category_detail',
             'price',
             'sku',
-            'description',
-            'white_front',
-            'white_back',
-            'white_left',
-            'white_right',
-            'black_front',
-            'black_back',
-            'black_left',
-            'black_right',
-            'svg_front',
-            'svg_back',
-            'svg_left',
-            'svg_right',
+            'size',
+            'model',
+            'main_images',
             'other_images',
             'user_shirts',
             'is_favorite',

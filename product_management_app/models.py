@@ -20,38 +20,37 @@ class ShirtSubCategory(models.Model):
         return self.name
     
 class Shirt(models.Model):
-    name = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
     category = models.ForeignKey(Category, related_name='shirts_category', on_delete=models.CASCADE) 
     sub_category = models.ForeignKey(ShirtSubCategory, related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
     
     # New fields
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Price of the shirt")
     sku = models.CharField(max_length=100, unique=True, blank=True, null=True, help_text="Stock Keeping Unit")
-    description = models.TextField(blank=True, null=True, help_text="Description of the shirt")
-
-    # White images
-    white_front = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White front image")
-    white_back = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White back image")
-    white_left = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White left image")
-    white_right = models.ImageField(upload_to='shirts/white/', blank=True, null=True, help_text="White right image")
-
-    # Black images
-    black_front = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black front image")
-    black_back = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black back image")
-    black_left = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black left image")
-    black_right = models.ImageField(upload_to='shirts/black/', blank=True, null=True, help_text="Black right image")
-
-    # SVG images (optional)
-    svg_front = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG front file (optional)")
-    svg_back = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG back file (optional)")
-    svg_left = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG left file (optional)")
-    svg_right = models.FileField(upload_to='shirts/svg/', blank=True, null=True, help_text="SVG right file (optional)")
+    size = models.TextField(blank=True, null=True, help_text="Size of the shirt")
+    model = models.BooleanField(default=False, help_text="Model flag")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - {self.sku}"
+        return f"{self.title} - {self.sku}"
+
+
+class MainShirtImage(models.Model):
+    """Main images for shirts (max 6 per shirt)"""
+    shirt = models.ForeignKey(Shirt, related_name='main_images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='shirts/main_images/', help_text="Main shirt image")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Main Shirt Image'
+        verbose_name_plural = 'Main Shirt Images'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Main image for {self.shirt.title}"
 
 
 class ShirtImage(models.Model):
@@ -67,7 +66,7 @@ class ShirtImage(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return f"Image for {self.shirt.name}"
+        return f"Image for {self.shirt.title}"
 
 
 class ShirtDraft(models.Model):
@@ -93,7 +92,7 @@ class UserShirt(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.shirt.name}"
+        return f"{self.user.username} - {self.shirt.title}"
     
 class FavoriteShirt(models.Model):
     user = models.ForeignKey(User, related_name='favoriteshirt_user', on_delete=models.CASCADE)
@@ -106,7 +105,7 @@ class FavoriteShirt(models.Model):
         if self.user_shirt:
             return f"{self.user.username} - User Shirt-{self.user_shirt.id}"
         elif self.shirt:
-            return f"{self.user.username} - {self.shirt.name}"
+            return f"{self.user.username} - {self.shirt.title}"
         else:
             return f"{self.user.username} - No shirt selected"
 
