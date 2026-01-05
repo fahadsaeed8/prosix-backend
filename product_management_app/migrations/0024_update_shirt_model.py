@@ -96,5 +96,11 @@ class Migration(migrations.Migration):
             model_name='shirt',
             name='svg_right',
         ),
+        # Change sub_category ForeignKey from ShirtSubCategory to SubCategory
+        migrations.AlterField(
+            model_name='shirt',
+            name='sub_category',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='shirts_subcategory', to='product_management_app.subcategory'),
+        ),
     ]
 

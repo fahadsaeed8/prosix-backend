@@ -22,7 +22,7 @@ class ShirtSubCategory(models.Model):
 class Shirt(models.Model):
     title = models.CharField(max_length=255)
     category = models.ForeignKey(Category, related_name='shirts_category', on_delete=models.CASCADE) 
-    sub_category = models.ForeignKey(ShirtSubCategory, related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
+    sub_category = models.ForeignKey('SubCategory', related_name='shirts_subcategory', on_delete=models.SET_NULL, null=True, blank=True) 
     
     # New fields
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Price of the shirt")
