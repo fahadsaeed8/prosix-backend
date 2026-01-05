@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(
-            recreate_shirt_table_with_correct_fk,
+            recreate_shirt_table,
             reverse_recreate_shirt_table,
         ),
     ]
