@@ -8,8 +8,8 @@ class SubCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SubCategory
-        fields = ['id', 'category', 'name', 'show_in', 'password', 'created_at', 'updated_at']
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = ['id', 'category', 'name', 'show_in', 'password', 'have_password', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'have_password', 'created_at', 'updated_at')
     
     def to_representation(self, instance):
         """Override to return full Category object instead of just ID"""

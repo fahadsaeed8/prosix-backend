@@ -448,8 +448,14 @@ class SubCategory(models.Model):
     name = models.CharField(max_length=255)
     show_in = models.CharField(max_length=255, blank=True, null=True, help_text="Where to show the sub-category")
     password = models.CharField(max_length=128, blank=True, null=True)
+    have_password = models.BooleanField(default=False, help_text="True if password is set")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Automatically set have_password based on whether password exists
+        self.have_password = bool(self.password and self.password.strip())
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} - {self.category}"
