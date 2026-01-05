@@ -270,20 +270,67 @@ class ShirtSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create shirt"""
         from django.db import IntegrityError
+        
+        # Pre-validate that SubCategory exists in database before attempting creation
+        sub_category = validated_data.get('sub_category')
+        if sub_category:
+            try:
+                # Refresh from database to ensure it exists
+                db_sub_category = SubCategory.objects.get(id=sub_category.id)
+                # Verify it matches what we have
+                if db_sub_category.id != sub_category.id:
+                    raise serializers.ValidationError({
+                        'sub_category': f'SubCategory ID mismatch detected.'
+                    })
+            except SubCategory.DoesNotExist:
+                raise serializers.ValidationError({
+                    'sub_category': f'SubCategory with ID {sub_category.id} does not exist in the database.'
+                })
+        
         try:
             shirt = Shirt.objects.create(**validated_data)
             return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
-            sub_category = validated_data.get('sub_category')
+            error_msg = str(e)
+            category = validated_data.get('category')
+            
+            # If we get here, SubCategory exists (we checked above), so the error is likely:
+            # 1. Database schema mismatch (migration not applied)
+            # 2. Category foreign key issue
+            # 3. Some other database constraint
+            
             if sub_category:
+                # SubCategory exists, so check category relationship
+                if category:
+                    db_sub_category = SubCategory.objects.get(id=sub_category.id)
+                    if db_sub_category.category_id != category.id:
+                        raise serializers.ValidationError({
+                            'sub_category': f'SubCategory "{db_sub_category.name}" (ID: {sub_category.id}) belongs to category ID {db_sub_category.category_id}, but you are trying to assign it to category ID {category.id}.'
+                        })
+                
+                # If category matches, it's likely a database schema issue
                 raise serializers.ValidationError({
-                    'sub_category': f'SubCategory with ID {sub_category.id} does not exist or is invalid. Please check that the SubCategory exists in the database.'
+                    'sub_category': f'Database foreign key constraint failed for SubCategory ID {sub_category.id}. This may indicate a database migration issue. Please ensure all migrations have been applied. Original error: {error_msg}'
                 })
-            else:
-                raise serializers.ValidationError({
-                    'non_field_errors': 'Failed to create shirt due to a database constraint. Please check all foreign key relationships.'
-                })
+            
+            # Check if Category exists
+            if category:
+                try:
+                    from website_management_app.models import Category
+                    Category.objects.get(id=category.id)
+                except Category.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'category': f'Category with ID {category.id} does not exist in the database.'
+                    })
+            
+            # Generic error if we can't identify the specific issue
+            raise serializers.ValidationError({
+                'non_field_errors': f'Failed to create shirt due to a database constraint: {error_msg}'
+            })
+        except serializers.ValidationError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             # Re-raise other exceptions
             raise
