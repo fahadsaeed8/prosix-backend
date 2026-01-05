@@ -217,6 +217,11 @@ class ShirtDraftSerializer(serializers.ModelSerializer):
 
 class ShirtSerializer(serializers.ModelSerializer):
     category = CategoryInputField()
+    sub_category = serializers.PrimaryKeyRelatedField(
+        queryset=SubCategory.objects.all(),
+        required=False,
+        allow_null=True
+    )
     main_images = MainShirtImageSerializer(many=True, read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
     
@@ -242,6 +247,20 @@ class ShirtSerializer(serializers.ModelSerializer):
             'sub_category': {'write_only': True},
         }
     
+    def validate(self, data):
+        """Validate that sub_category belongs to the same category"""
+        category = data.get('category')
+        sub_category = data.get('sub_category')
+        
+        if sub_category and category:
+            # Ensure sub_category belongs to the same category
+            if sub_category.category_id != category.id:
+                raise serializers.ValidationError({
+                    'sub_category': f'SubCategory "{sub_category.name}" does not belong to category "{category.category_name}"'
+                })
+        
+        return data
+    
     def validate_price(self, value):
         """Validate that price is positive"""
         if value <= 0:
@@ -250,8 +269,24 @@ class ShirtSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create shirt"""
-        shirt = Shirt.objects.create(**validated_data)
-        return shirt
+        from django.db import IntegrityError
+        try:
+            shirt = Shirt.objects.create(**validated_data)
+            return shirt
+        except IntegrityError as e:
+            # Provide more helpful error message for foreign key constraint failures
+            sub_category = validated_data.get('sub_category')
+            if sub_category:
+                raise serializers.ValidationError({
+                    'sub_category': f'SubCategory with ID {sub_category.id} does not exist or is invalid. Please check that the SubCategory exists in the database.'
+                })
+            else:
+                raise serializers.ValidationError({
+                    'non_field_errors': 'Failed to create shirt due to a database constraint. Please check all foreign key relationships.'
+                })
+        except Exception as e:
+            # Re-raise other exceptions
+            raise
     
     def update(self, instance, validated_data):
         """Update shirt"""
