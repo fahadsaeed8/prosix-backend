@@ -574,12 +574,10 @@ class CustomizerSerializer(serializers.ModelSerializer):
         model = Customizer
         fields = [
             'id',
-            'model_name',
-            'model_type',
-            'sport',
+            'title',
             'category',
             'sub_category',
-            'description',
+            'size',
             'is_active',
             'views',
             'front_black_layer',

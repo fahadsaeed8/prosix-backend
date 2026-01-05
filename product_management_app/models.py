@@ -82,7 +82,7 @@ class ShirtDraft(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"Draft for {self.customizer.model_name} - {self.get_status_display()}"
+        return f"Draft for {self.customizer.title} - {self.get_status_display()}"
 
 class UserShirt(models.Model):
     user = models.ForeignKey(User, related_name='usershirts_user', on_delete=models.CASCADE)
@@ -138,12 +138,10 @@ CATEGORY_CHOICES = [
 
 
 class Customizer(models.Model):
-    model_name = models.CharField(max_length=255)
-    model_type = models.CharField(max_length=50, choices=MODEL_TYPE_CHOICES)
-    sport = models.CharField(max_length=50, choices=SPORT_CHOICES)
+    title = models.CharField(max_length=255)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     sub_category = models.JSONField(blank=True, null=True, default=list, help_text="Optional list of sub-categories for customizer")
-    description = models.TextField(blank=True, null=True)
+    size = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True, help_text="Whether the model is active")
     views = models.IntegerField(default=0, help_text="Total number of views")
     
@@ -176,7 +174,7 @@ class Customizer(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.model_name} - {self.get_model_type_display()} ({self.get_sport_display()})"
+        return f"{self.title} - {self.get_category_display()}"
 
 
 class UserCustomizer(models.Model):
@@ -188,7 +186,7 @@ class UserCustomizer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.customizer.model_name}"
+        return f"{self.user.username} - {self.customizer.title}"
     
     class Meta:
         verbose_name = 'User Customizer'

@@ -1231,7 +1231,7 @@ class GenerateProductSalesReportAPIView(APIView):
                     top_product_units_sold = top_shirt.user_count
                     top_category = top_shirt.category.name if top_shirt.category else 'N/A'
                 else:
-                    top_product_name = top_customizer.model_name
+                    top_product_name = top_customizer.title
                     top_product_units_sold = top_customizer.user_count
                     top_category = top_customizer.get_category_display()
             elif top_shirt:
@@ -1239,7 +1239,7 @@ class GenerateProductSalesReportAPIView(APIView):
                 top_product_units_sold = top_shirt.user_count
                 top_category = top_shirt.category.name if top_shirt.category else 'N/A'
             elif top_customizer:
-                top_product_name = top_customizer.model_name
+                top_product_name = top_customizer.title
                 top_product_units_sold = top_customizer.user_count
                 top_category = top_customizer.get_category_display()
             else:
