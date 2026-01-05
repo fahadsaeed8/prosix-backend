@@ -1,11 +1,10 @@
-# Generated manually - updates Customizer model fields
-# Renames model_name to title, removes model_type and sport, renames description to size
+# Generated manually - drops model_type and sport columns from customizer table
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 def drop_model_type_and_sport_columns(apps, schema_editor):
-    """Drop model_type and sport columns from customizer table by recreating it"""
+    """Drop model_type and sport columns from customizer table"""
     with schema_editor.connection.cursor() as cursor:
         # Disable foreign key checks
         cursor.execute("PRAGMA foreign_keys=OFF")
@@ -77,32 +76,10 @@ def reverse_drop_columns(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('product_management_app', '0030_verify_subcategory_fk'),
+        ('product_management_app', '0031_update_customizer_fields'),
     ]
 
     operations = [
-        # Rename model_name to title
-        migrations.RenameField(
-            model_name='customizer',
-            old_name='model_name',
-            new_name='title',
-        ),
-        # Rename description to size
-        migrations.RenameField(
-            model_name='customizer',
-            old_name='description',
-            new_name='size',
-        ),
-        # Remove model_type and sport fields from state
-        migrations.RemoveField(
-            model_name='customizer',
-            name='model_type',
-        ),
-        migrations.RemoveField(
-            model_name='customizer',
-            name='sport',
-        ),
-        # Drop columns from database
         migrations.RunPython(
             drop_model_type_and_sport_columns,
             reverse_drop_columns,
