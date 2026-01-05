@@ -140,20 +140,20 @@ class CategoryInputField(serializers.Field):
     """
     Accepts category as either an integer id or a numeric string.
     Only ID-based inputs are supported here.
-    Returns full Category object in representation.
+    Returns Category instance for internal use, full Category object in representation.
     """
     def to_internal_value(self, data):
         if isinstance(data, int):
             try:
-                Category.objects.get(id=data)
-                return data
+                category = Category.objects.get(id=data)
+                return category
             except Category.DoesNotExist:
                 raise serializers.ValidationError("Invalid category id")
         if isinstance(data, str) and data.isdigit():
             cid = int(data)
             try:
-                Category.objects.get(id=cid)
-                return cid
+                category = Category.objects.get(id=cid)
+                return category
             except Category.DoesNotExist:
                 raise serializers.ValidationError("Invalid category id")
         raise serializers.ValidationError("Category must be a valid integer id.")
