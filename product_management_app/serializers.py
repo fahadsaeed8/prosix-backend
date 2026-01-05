@@ -224,6 +224,18 @@ class ShirtSerializer(serializers.ModelSerializer):
     )
     main_images = MainShirtImageSerializer(many=True, read_only=True)
     other_images = ShirtImageSerializer(many=True, read_only=True)
+    main_images_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+        help_text="Upload main images (max 6)"
+    )
+    other_images_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+        help_text="Upload other images"
+    )
     
     class Meta:
         model = Shirt
@@ -238,6 +250,8 @@ class ShirtSerializer(serializers.ModelSerializer):
             'model',
             'main_images',
             'other_images',
+            'main_images_upload',
+            'other_images_upload',
             'created_at',
             'updated_at'
         ]
@@ -268,8 +282,58 @@ class ShirtSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        """Create shirt"""
+        """Create shirt with images"""
         from django.db import IntegrityError
+        
+        # Extract image uploads from validated_data (support both field names)
+        main_images_upload = validated_data.pop('main_images_upload', [])
+        other_images_upload = validated_data.pop('other_images_upload', [])
+        
+        # Also check for main_images and other_images (for backward compatibility)
+        if not main_images_upload:
+            main_images_upload = validated_data.pop('main_images', [])
+        if not other_images_upload:
+            other_images_upload = validated_data.pop('other_images', [])
+        
+        # Handle case where images might be in request.FILES
+        # This handles multipart/form-data uploads where files might not be parsed into validated_data
+        request = self.context.get('request')
+        if request and hasattr(request, 'FILES'):
+            # Check for main_images_upload files (can be multiple with same field name)
+            if 'main_images_upload' in request.FILES:
+                files_list = request.FILES.getlist('main_images_upload')
+                if files_list:
+                    main_images_upload = files_list
+            elif 'main_images' in request.FILES:
+                files_list = request.FILES.getlist('main_images')
+                if files_list:
+                    main_images_upload = files_list
+            elif 'main_image' in request.FILES:
+                main_images_upload = [request.FILES['main_image']]
+            
+            # Check for other_images_upload files (can be multiple with same field name)
+            if 'other_images_upload' in request.FILES:
+                files_list = request.FILES.getlist('other_images_upload')
+                if files_list:
+                    other_images_upload = files_list
+            elif 'other_images' in request.FILES:
+                files_list = request.FILES.getlist('other_images')
+                if files_list:
+                    other_images_upload = files_list
+            elif 'other_image' in request.FILES:
+                other_images_upload = [request.FILES['other_image']]
+        
+        # Validate main images count (max 6)
+        if len(main_images_upload) > 6:
+            raise serializers.ValidationError({
+                'main_images_upload': 'Maximum 6 main images allowed.'
+            })
+        
+        # Validate other images count (max 10)
+        if len(other_images_upload) > 10:
+            raise serializers.ValidationError({
+                'other_images_upload': 'Maximum 10 other images allowed.'
+            })
         
         # Pre-validate that SubCategory exists in database before attempting creation
         sub_category = validated_data.get('sub_category')
@@ -289,6 +353,15 @@ class ShirtSerializer(serializers.ModelSerializer):
         
         try:
             shirt = Shirt.objects.create(**validated_data)
+            
+            # Create main images
+            for image in main_images_upload:
+                MainShirtImage.objects.create(shirt=shirt, image=image)
+            
+            # Create other images
+            for image in other_images_upload:
+                ShirtImage.objects.create(shirt=shirt, image=image)
+            
             return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
@@ -336,10 +409,76 @@ class ShirtSerializer(serializers.ModelSerializer):
             raise
     
     def update(self, instance, validated_data):
-        """Update shirt"""
+        """Update shirt with images"""
+        # Extract image uploads from validated_data (support both field names)
+        main_images_upload = validated_data.pop('main_images_upload', None)
+        other_images_upload = validated_data.pop('other_images_upload', None)
+        
+        # Also check for main_images and other_images (for backward compatibility)
+        if main_images_upload is None:
+            main_images_upload = validated_data.pop('main_images', None)
+        if other_images_upload is None:
+            other_images_upload = validated_data.pop('other_images', None)
+        
+        # Handle case where images might be in request.FILES
+        # This handles multipart/form-data uploads where files might not be parsed into validated_data
+        request = self.context.get('request')
+        if request and hasattr(request, 'FILES'):
+            # Check for main_images_upload files (can be multiple with same field name)
+            if main_images_upload is None and 'main_images_upload' in request.FILES:
+                files_list = request.FILES.getlist('main_images_upload')
+                if files_list:
+                    main_images_upload = files_list
+            elif main_images_upload is None and 'main_images' in request.FILES:
+                files_list = request.FILES.getlist('main_images')
+                if files_list:
+                    main_images_upload = files_list
+            elif main_images_upload is None and 'main_image' in request.FILES:
+                main_images_upload = [request.FILES['main_image']]
+            
+            # Check for other_images_upload files (can be multiple with same field name)
+            if other_images_upload is None and 'other_images_upload' in request.FILES:
+                files_list = request.FILES.getlist('other_images_upload')
+                if files_list:
+                    other_images_upload = files_list
+            elif other_images_upload is None and 'other_images' in request.FILES:
+                files_list = request.FILES.getlist('other_images')
+                if files_list:
+                    other_images_upload = files_list
+            elif other_images_upload is None and 'other_image' in request.FILES:
+                other_images_upload = [request.FILES['other_image']]
+        
+        # Update shirt fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Handle main images upload
+        if main_images_upload is not None:
+            # Validate count
+            current_count = instance.main_images.count()
+            if current_count + len(main_images_upload) > 6:
+                raise serializers.ValidationError({
+                    'main_images_upload': f'Maximum 6 main images allowed. Currently have {current_count}, trying to add {len(main_images_upload)}.'
+                })
+            
+            # Create new main images
+            for image in main_images_upload:
+                MainShirtImage.objects.create(shirt=instance, image=image)
+        
+        # Handle other images upload
+        if other_images_upload is not None:
+            # Validate count
+            current_count = instance.other_images.count()
+            if current_count + len(other_images_upload) > 10:
+                raise serializers.ValidationError({
+                    'other_images_upload': f'Maximum 10 other images allowed. Currently have {current_count}, trying to add {len(other_images_upload)}.'
+                })
+            
+            # Create new other images
+            for image in other_images_upload:
+                ShirtImage.objects.create(shirt=instance, image=image)
+        
         return instance
     
 
