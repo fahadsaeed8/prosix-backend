@@ -142,6 +142,8 @@ class Customizer(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     sub_category = models.JSONField(blank=True, null=True, default=list, help_text="Optional list of sub-categories for customizer")
     size = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Price of the customizer")
+    sku = models.CharField(max_length=100, unique=True, blank=True, null=True, help_text="Stock Keeping Unit")
     is_active = models.BooleanField(default=True, help_text="Whether the model is active")
     views = models.IntegerField(default=0, help_text="Total number of views")
     
