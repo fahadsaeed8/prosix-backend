@@ -362,7 +362,7 @@ class ShirtSerializer(serializers.ModelSerializer):
             for image in other_images_upload:
                 ShirtImage.objects.create(shirt=shirt, image=image)
         
-        return shirt
+            return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
             error_msg = str(e)
