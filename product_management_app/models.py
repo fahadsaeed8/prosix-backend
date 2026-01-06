@@ -139,7 +139,7 @@ CATEGORY_CHOICES = [
 
 class Customizer(models.Model):
     title = models.CharField(max_length=255)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    category = models.ForeignKey('website_management_app.Category', related_name='customizers_category', on_delete=models.CASCADE)
     sub_category = models.JSONField(blank=True, null=True, default=list, help_text="Optional list of sub-categories for customizer")
     size = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Price of the customizer")

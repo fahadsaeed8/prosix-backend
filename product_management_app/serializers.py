@@ -565,71 +565,9 @@ class FavoriteShirtSerializer(serializers.ModelSerializer):
         return FavoriteShirt.objects.create(**validated_data)
 
 
-class CustomizerCategoryField(serializers.Field):
-    """
-    Custom field for Customizer category (CharField with choices).
-    Accepts category as a string choice value (e.g., "jerseys", "shorts").
-    Returns Category object if found, otherwise returns the string value.
-    """
-    def to_internal_value(self, data):
-        # Accept string category values (choices)
-        if isinstance(data, str):
-            # Validate it's one of the valid choices
-            valid_choices = ['jerseys', 'shorts', 'hoodies', 'pants', 'jacket', 'accessories']
-            if data.lower() in valid_choices:
-                return data.lower()
-            raise serializers.ValidationError(f"Category must be one of: {', '.join(valid_choices)}")
-        # Also accept Category ID for backward compatibility
-        if isinstance(data, int):
-            try:
-                category = Category.objects.get(id=data)
-                # Try to match category_name to a choice value
-                category_name_lower = category.category_name.lower()
-                valid_choices = ['jerseys', 'shorts', 'hoodies', 'pants', 'jacket', 'accessories']
-                for choice in valid_choices:
-                    if choice in category_name_lower or category_name_lower in choice:
-                        return choice
-                # If no match, return the category_name as-is
-                return category_name_lower
-            except Category.DoesNotExist:
-                raise serializers.ValidationError("Invalid category id")
-        raise serializers.ValidationError("Category must be a valid string choice or integer id.")
-    
-    def to_representation(self, value):
-        """Return Category object if found, otherwise return the string value"""
-        if value is None:
-            return None
-        
-        # If value is already a Category object
-        if hasattr(value, 'category_name'):
-            from website_management_app.serializers import CategorySerializer as FullCategorySerializer
-            return FullCategorySerializer(value).data
-        
-        # If value is a string (choice value like "jerseys")
-        if isinstance(value, str):
-            # Try to find a Category that matches
-            try:
-                # Try exact match first (case-insensitive)
-                category = Category.objects.filter(category_name__iexact=value).first()
-                if not category:
-                    # Try partial match
-                    category = Category.objects.filter(category_name__icontains=value).first()
-                
-                if category:
-                    from website_management_app.serializers import CategorySerializer as FullCategorySerializer
-                    return FullCategorySerializer(category).data
-            except Exception:
-                pass
-            
-            # If no Category found, return the string value
-            return value
-        
-        return value
-
-
 class CustomizerSerializer(serializers.ModelSerializer):
     """Serializer for Customizer"""
-    category = CustomizerCategoryField()
+    category = CategoryInputField()
     sub_category = SubCategoryInputField()
     
     class Meta:
