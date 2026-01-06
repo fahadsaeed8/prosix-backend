@@ -113,9 +113,7 @@ class Product(models.Model):
 
 class Category(models.Model):
     category_name = models.CharField(max_length=255)
-    icon = models.CharField(max_length=10, help_text="Emoji icon")
     description = models.TextField(blank=True, null=True)
-    color = models.CharField(max_length=7, help_text="Hex color code", default="#000000")
     show_in = models.CharField(max_length=50, blank=True, null=True, help_text="Section to show this category in")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,7 +124,7 @@ class Category(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.category_name} {self.icon}"
+        return self.category_name
 
 class WebsiteSettings(models.Model):
     """

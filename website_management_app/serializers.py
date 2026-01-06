@@ -185,22 +185,12 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'category_name',
-            'icon',
             'description',
-            'color',
             'show_in',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-    def validate_color(self, value):
-        """Validate hex color code format"""
-        if value and not value.startswith('#'):
-            raise serializers.ValidationError("Color must be a valid hex code starting with #")
-        if value and len(value) != 7:
-            raise serializers.ValidationError("Color must be a valid hex code (e.g., #FF5733)")
-        return value
 
 
 class PaymentSettingsSerializer(serializers.ModelSerializer):
