@@ -361,8 +361,8 @@ class ShirtSerializer(serializers.ModelSerializer):
             # Create other images
             for image in other_images_upload:
                 ShirtImage.objects.create(shirt=shirt, image=image)
-
-            return shirt
+        
+        return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
             error_msg = str(e)
@@ -723,14 +723,11 @@ class FontSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Font
+        # API surface reduced: only accept font_name and font_file
         fields = [
             'id',
             'font_name',
-            'font_family',
-            'category',
-            'description',
             'font_file',
-            'preview_text',
             'created_at',
             'updated_at'
         ]
