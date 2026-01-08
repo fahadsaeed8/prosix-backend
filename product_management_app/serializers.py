@@ -614,6 +614,7 @@ class PatternSerializer(serializers.ModelSerializer):
             'id',
             'pattern_name',
             'mark_as_new',
+            'pattern_images_upload',
             'images',
             'created_at',
             'updated_at'
