@@ -620,9 +620,7 @@ class PatternSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
-    # New write-only flag accepted by the API. It's not a model field; it's used
-    # to mark created patterns as "new" by adding the 'new' tag.
-    mark_as_new = serializers.BooleanField(write_only=True, required=False, default=False)
+    # `mark_as_new` is a model field now; allow normal read/write through ModelSerializer.
     # Accept up to 5 images during create as a list of uploaded files.
     # Accept files (including SVG). Use FileField as child because
     # ImageField (Pillow) rejects SVGs.
@@ -652,11 +650,14 @@ class PatternSerializer(serializers.ModelSerializer):
         return result
 
     def to_representation(self, instance):
-        """Include computed `mark_as_new` in GET responses (derived from tags)."""
+        """Include `mark_as_new` in GET responses (model field). Fallback to tags for compatibility."""
         representation = super().to_representation(instance)
-        tags = getattr(instance, 'tags', '') or ''
-        tag_list = [t.strip().lower() for t in tags.split(',') if t.strip()]
-        representation['mark_as_new'] = 'new' in tag_list
+        is_new_flag = getattr(instance, 'mark_as_new', False)
+        if not is_new_flag:
+            tags = getattr(instance, 'tags', '') or ''
+            tag_list = [t.strip().lower() for t in tags.split(',') if t.strip()]
+            is_new_flag = 'new' in tag_list
+        representation['mark_as_new'] = bool(is_new_flag)
         return representation
 
     def validate_pattern_images_upload(self, value):
@@ -721,8 +722,6 @@ class PatternSerializer(serializers.ModelSerializer):
         except Exception:
             default_category_value = 'geometric'
 
-        tags_value = 'new' if mark_as_new else None
-
         # Pop uploaded images (if any) before creating the pattern object
         uploaded_images = validated_data.pop('pattern_images_upload', None)
 
@@ -730,7 +729,7 @@ class PatternSerializer(serializers.ModelSerializer):
         pattern = Pattern.objects.create(
             pattern_name=validated_data.get('pattern_name'),
             category=default_category_value,
-            tags=tags_value
+            mark_as_new=mark_as_new
         )
 
         # If images were uploaded, create PatternImage instances (limit enforced by serializer)

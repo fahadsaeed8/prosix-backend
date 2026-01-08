@@ -214,6 +214,8 @@ class Pattern(models.Model):
     # Use FileField to support SVG uploads as patterns (ImageField validates images via Pillow)
     pattern_image = models.FileField(upload_to='patterns/', blank=True, null=True)
     tags = models.CharField(max_length=500, blank=True, null=True, help_text="Comma-separated tags")
+    # API-visible boolean flag (user requested `mark_as_new` attribute)
+    mark_as_new = models.BooleanField(default=False, help_text="True if this pattern is new")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
