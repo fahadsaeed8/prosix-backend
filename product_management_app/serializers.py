@@ -692,13 +692,11 @@ class ColorSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Color
+        # API now accepts only color_name and color_code on create/update.
         fields = [
             'id',
             'color_name',
             'color_code',
-            'category',
-            'description',
-            'tags',
             'created_at',
             'updated_at'
         ]
