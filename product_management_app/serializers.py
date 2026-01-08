@@ -362,7 +362,7 @@ class ShirtSerializer(serializers.ModelSerializer):
             for image in other_images_upload:
                 ShirtImage.objects.create(shirt=shirt, image=image)
         
-            return shirt
+        return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
             error_msg = str(e)
@@ -650,6 +650,14 @@ class PatternSerializer(serializers.ModelSerializer):
                     url = request.build_absolute_uri(url)
                 result.append({'id': im.id, 'image': url})
         return result
+
+    def to_representation(self, instance):
+        """Include computed `mark_as_new` in GET responses (derived from tags)."""
+        representation = super().to_representation(instance)
+        tags = getattr(instance, 'tags', '') or ''
+        tag_list = [t.strip().lower() for t in tags.split(',') if t.strip()]
+        representation['mark_as_new'] = 'new' in tag_list
+        return representation
 
     def validate_pattern_images_upload(self, value):
         """
