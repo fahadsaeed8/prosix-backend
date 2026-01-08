@@ -23,7 +23,8 @@ class ConditionalRemoveField(migrations.operations.fields.RemoveField):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('product_management_app', '0026_merge_0024_merge_20260105_1544_0025_alter_shirt_size'),
+        # 0026 was removed; depend on the last existing predecessor (0025)
+        ('product_management_app', '0025_alter_shirt_size'),
     ]
 
     operations = [

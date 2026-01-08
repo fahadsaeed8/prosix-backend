@@ -369,14 +369,17 @@ class PatternListCreateView(generics.ListCreateAPIView):
         }, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        # Support bulk create: accept a list of patterns or a single object
+        is_many = isinstance(request.data, list)
+        serializer = self.get_serializer(data=request.data, many=is_many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        message = 'Patterns created successfully' if is_many else 'Pattern created successfully'
         return Response({
             'success': True,
             'response': {
                 'data': serializer.data,
-                'message': 'Pattern created successfully'
+                'message': message
             }
         }, status=status.HTTP_201_CREATED)
 

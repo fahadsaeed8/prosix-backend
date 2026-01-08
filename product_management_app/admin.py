@@ -1,5 +1,6 @@
 from django.contrib import admin
 from product_management_app.models import Shirt, ShirtCategory, ShirtImage, UserShirt, FavoriteShirt, ShirtSubCategory, Customizer, UserCustomizer, Pattern, Color, Font, Order, Invoice
+from .models import PatternImage
 
 # Register your models here.
 admin.site.register(ShirtCategory)
@@ -11,6 +12,7 @@ admin.site.register(ShirtSubCategory)
 admin.site.register(Customizer)
 admin.site.register(UserCustomizer)
 admin.site.register(Pattern)
+admin.site.register(PatternImage)
 admin.site.register(Color)
 admin.site.register(Font)
 admin.site.register(Order)

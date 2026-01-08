@@ -226,6 +226,20 @@ class Pattern(models.Model):
         return f"{self.pattern_name} - {self.get_category_display()}"
 
 
+class PatternImage(models.Model):
+    """Stores multiple images for a Pattern (max 5 per create enforced at serializer level)."""
+    pattern = models.ForeignKey(Pattern, on_delete=models.CASCADE, related_name='pattern_images')
+    image = models.FileField(upload_to='patterns/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Pattern Image'
+        verbose_name_plural = 'Pattern Images'
+
+    def __str__(self):
+        return f"Image for {self.pattern.pattern_name} ({self.id})"
+
+
 # Color Model Choices
 COLOR_CATEGORY_CHOICES = [
     ('primary', 'Primary'),

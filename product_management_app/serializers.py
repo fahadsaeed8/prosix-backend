@@ -353,15 +353,15 @@ class ShirtSerializer(serializers.ModelSerializer):
         
         try:
             shirt = Shirt.objects.create(**validated_data)
-            
+
             # Create main images
             for image in main_images_upload:
                 MainShirtImage.objects.create(shirt=shirt, image=image)
-            
+
             # Create other images
             for image in other_images_upload:
                 ShirtImage.objects.create(shirt=shirt, image=image)
-        
+
             return shirt
         except IntegrityError as e:
             # Provide more helpful error message for foreign key constraint failures
@@ -609,26 +609,79 @@ class PatternSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Pattern
+        # API now accepts only pattern_name and mark_as_new on create.
         fields = [
             'id',
             'pattern_name',
-            'category',
-            'description',
-            'pattern_image',
-            'tags',
+            'mark_as_new',
+            'images',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ('id', 'created_at', 'updated_at')
-    def validate_pattern_image(self, value):
-        # Optional: enforce a reasonable set of extensions if provided
-        if value:
-            import os
-            ext = os.path.splitext(value.name)[1].lower()
-            allowed = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff']
-            if ext not in allowed:
-                raise serializers.ValidationError(f"Unsupported file extension: {ext}. Allowed: {', '.join(allowed)}")
-        return value
+    # New write-only flag accepted by the API. It's not a model field; it's used
+    # to mark created patterns as "new" by adding the 'new' tag.
+    mark_as_new = serializers.BooleanField(write_only=True, required=False, default=False)
+    # Accept up to 5 images during create as a list of uploaded files.
+    pattern_images_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+        max_length=5
+    )
+
+    # Read-only nested list of image URLs
+    images = serializers.SerializerMethodField(read_only=True)
+
+    def get_images(self, obj):
+        # Import locally to avoid circular import at module load time.
+        from .models import PatternImage
+        imgs = PatternImage.objects.filter(pattern=obj).order_by('id')
+        request = self.context.get('request')
+        result = []
+        for im in imgs:
+            if im.image:
+                url = im.image.url
+                if request is not None:
+                    url = request.build_absolute_uri(url)
+                result.append({'id': im.id, 'image': url})
+        return result
+
+    def create(self, validated_data):
+        """
+        Create a Pattern instance from validated_data.
+        The API only provides `pattern_name` and optionally `mark_as_new`.
+        Since `category` is required on the model, default to the first pattern
+        category choice if not provided by the API.
+        If `mark_as_new` is True, add 'new' to the `tags` field.
+        """
+        mark_as_new = validated_data.pop('mark_as_new', False)
+        # Provide a safe default for required `category` model field by
+        # using the first choice from the Pattern model's category field.
+        try:
+            default_category_value = Pattern._meta.get_field('category').choices[0][0]
+        except Exception:
+            default_category_value = 'geometric'
+
+        tags_value = 'new' if mark_as_new else None
+
+        # Pop uploaded images (if any) before creating the pattern object
+        uploaded_images = validated_data.pop('pattern_images_upload', None)
+
+        # Create the Pattern instance with defaults for missing fields.
+        pattern = Pattern.objects.create(
+            pattern_name=validated_data.get('pattern_name'),
+            category=default_category_value,
+            tags=tags_value
+        )
+
+        # If images were uploaded, create PatternImage instances (limit enforced by serializer)
+        if uploaded_images:
+            from .models import PatternImage
+            for img in uploaded_images[:5]:
+                PatternImage.objects.create(pattern=pattern, image=img)
+        return pattern
     
 
 
