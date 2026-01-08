@@ -624,8 +624,10 @@ class PatternSerializer(serializers.ModelSerializer):
     # to mark created patterns as "new" by adding the 'new' tag.
     mark_as_new = serializers.BooleanField(write_only=True, required=False, default=False)
     # Accept up to 5 images during create as a list of uploaded files.
+    # Accept files (including SVG). Use FileField as child because
+    # ImageField (Pillow) rejects SVGs.
     pattern_images_upload = serializers.ListField(
-        child=serializers.ImageField(),
+        child=serializers.FileField(),
         write_only=True,
         required=False,
         allow_empty=True,
@@ -648,6 +650,52 @@ class PatternSerializer(serializers.ModelSerializer):
                     url = request.build_absolute_uri(url)
                 result.append({'id': im.id, 'image': url})
         return result
+
+    def validate_pattern_images_upload(self, value):
+        """
+        Validate each uploaded file: allow raster images (png,jpg,jpeg,gif,webp,...)
+        and vector svg files. For raster images try to verify with Pillow if available.
+        """
+        import os
+        allowed_exts = {'.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff'}
+        raster_exts = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff'}
+
+        errors = {}
+        for idx, file in enumerate(value):
+            name = getattr(file, 'name', '')
+            ext = os.path.splitext(name)[1].lower()
+            if ext not in allowed_exts:
+                errors[str(idx)] = [f"Unsupported file extension: {ext}. Allowed: {', '.join(sorted(allowed_exts))}"]
+                continue
+
+            if ext in raster_exts:
+                # Try to validate raster image using Pillow if available
+                try:
+                    from PIL import Image
+                    file.seek(0)
+                    img = Image.open(file)
+                    img.verify()
+                    file.seek(0)
+                except Exception:
+                    errors[str(idx)] = ["Upload a valid image. The file you uploaded was either not an image or a corrupted image."]
+                    # attempt to continue validating other files
+                    continue
+            else:
+                # Basic SVG sanity check: ensure it contains an <svg tag in the start of file
+                try:
+                    file.seek(0)
+                    start = file.read(1024)
+                    if isinstance(start, bytes):
+                        start = start.decode('utf-8', errors='ignore')
+                    if '<svg' not in start.lower():
+                        errors[str(idx)] = ["Upload a valid SVG file."]
+                    file.seek(0)
+                except Exception:
+                    errors[str(idx)] = ["Upload a valid SVG file."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+        return value
 
     def create(self, validated_data):
         """
